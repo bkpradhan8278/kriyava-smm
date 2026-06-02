@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Check, Lock, Sparkles, AlertCircle, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { loadAccount, saveAccount } from "@/lib/account";
+import { api, setToken, ApiError } from "@/lib/api";
 
 function LoginContent() {
   const router = useRouter();
@@ -25,22 +26,31 @@ function LoginContent() {
     }
   }, [searchParams]);
 
-  const handleLogin = (nameVal?: string, emailVal?: string) => {
+  // Hydrate the localStorage account from an API user, so the existing
+  // dashboard (which reads localStorage) shows real backend data.
+  const hydrateFromApi = (u: { name: string; email: string; balance: number; spent: number }) => {
+    const acc = loadAccount();
+    acc.name = u.name;
+    acc.email = u.email;
+    acc.balance = u.balance;
+    acc.spent = u.spent;
+    acc._seeded = true;
+    saveAccount(acc);
+  };
+
+  // Demo fallback if the API is unreachable — keeps the app usable offline.
+  const demoLogin = (nameVal?: string, emailVal?: string) => {
     const acc = loadAccount();
     acc.name = nameVal || name || acc.name || "Creator";
     acc.email = emailVal || email || acc.email || "creator@kriyava.com";
-    
-    // Grant ₹500 welcome balance on first mock setup if balance is 0
     if (acc.balance === 0 && !acc._seeded) {
       acc.balance = 500;
       acc._seeded = true;
     }
-    
     saveAccount(acc);
-    router.push("/dashboard");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
       setError("Please enter your email address.");
@@ -50,14 +60,33 @@ function LoginContent() {
       setError("Password must be at least 6 characters.");
       return;
     }
+    if (mode === "up" && name.trim().length < 2) {
+      setError("Please enter your name.");
+      return;
+    }
 
     setError("");
     setLoading(true);
 
-    setTimeout(() => {
-      setLoading(false);
-      handleLogin(mode === "up" ? name : undefined, email);
-    }, 700);
+    try {
+      const res =
+        mode === "up"
+          ? await api.register(email.trim(), name.trim(), password)
+          : await api.login(email.trim(), password);
+      setToken(res.token);
+      hydrateFromApi(res.user);
+      router.push("/dashboard");
+    } catch (err) {
+      // If it's a real auth error (bad credentials / email taken), show it.
+      if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
+        setError(err.message);
+        setLoading(false);
+        return;
+      }
+      // Network/server issue → fall back to demo mode so the app still works.
+      demoLogin(mode === "up" ? name : undefined, email);
+      router.push("/dashboard");
+    }
   };
 
   return (
@@ -188,7 +217,7 @@ function LoginContent() {
           {/* SOCIAL AUTH BUTTONS */}
           <div className="grid grid-cols-2 gap-3 mb-6">
             <button
-              onClick={() => handleLogin("Google User")}
+              onClick={() => { demoLogin("Google User"); router.push("/dashboard"); }}
               className="flex items-center justify-center gap-2 border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] py-3 px-4 rounded-xl text-xs font-extrabold transition-all hover:-translate-y-0.5 active:translate-y-0"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" className="mr-0.5">
@@ -200,7 +229,7 @@ function LoginContent() {
               Google
             </button>
             <button
-              onClick={() => handleLogin("Telegram User")}
+              onClick={() => { demoLogin("Telegram User"); router.push("/dashboard"); }}
               className="flex items-center justify-center gap-2 border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] py-3 px-4 rounded-xl text-xs font-extrabold transition-all hover:-translate-y-0.5 active:translate-y-0"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="#229ED9" className="mr-0.5">
