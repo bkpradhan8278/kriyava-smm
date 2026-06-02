@@ -26,15 +26,13 @@ export function Hero() {
               "radial-gradient(45% 55% at 80% 8%, rgba(37,99,235,0.22), transparent 70%), radial-gradient(45% 55% at 10% 20%, rgba(6,182,212,0.18), transparent 70%), radial-gradient(55% 60% at 55% 100%, rgba(16,185,129,0.16), transparent 70%)",
           }}
         />
-        {/* VISIBLE small-box grid — covers the whole hero, gently fades at edges */}
+        {/* VISIBLE small-box grid — stronger slate lines so they pop on the light bg */}
         <div
           className="absolute inset-0"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(37,99,235,0.18) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,0.18) 1px,transparent 1px)",
-            backgroundSize: "38px 38px",
-            maskImage: "radial-gradient(ellipse 110% 100% at 60% 25%, #000 60%, transparent 100%)",
-            WebkitMaskImage: "radial-gradient(ellipse 110% 100% at 60% 25%, #000 60%, transparent 100%)",
+              "linear-gradient(rgba(51,65,85,0.32) 1px,transparent 1px),linear-gradient(90deg,rgba(51,65,85,0.32) 1px,transparent 1px)",
+            backgroundSize: "40px 40px",
           }}
         />
         {/* a few glowing accent cells for premium depth */}
@@ -52,8 +50,8 @@ export function Hero() {
           style={{
             transform: "perspective(520px) rotateX(60deg)",
             backgroundImage:
-              "linear-gradient(rgba(37,99,235,0.22) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,0.22) 1px,transparent 1px)",
-            backgroundSize: "38px 38px",
+              "linear-gradient(rgba(37,99,235,0.35) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,0.35) 1px,transparent 1px)",
+            backgroundSize: "40px 40px",
             maskImage: "linear-gradient(to top, #000 10%, transparent 90%)",
             WebkitMaskImage: "linear-gradient(to top, #000 10%, transparent 90%)",
           }}
