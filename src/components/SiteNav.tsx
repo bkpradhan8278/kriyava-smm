@@ -30,50 +30,56 @@ export function SiteNav() {
   }, []);
 
   return (
-    <div className="sticky top-0 z-60">
-      <div className="container-x">
+    <div className="sticky top-0 z-60 px-3 sm:px-4 pt-3">
+      <div className="container-x !px-0">
         <nav
           aria-label="Primary"
-          className="flex h-[72px] items-center justify-between transition-[border-color,box-shadow] duration-300"
+          className="flex h-[60px] items-center justify-between rounded-2xl px-3 sm:px-4 transition-all duration-300"
           style={{
-            background: scrolled ? "rgba(255, 255, 255, 0.72)" : "transparent",
-            backdropFilter: "saturate(180%) blur(16px)",
-            WebkitBackdropFilter: "saturate(180%) blur(16px)",
-            borderBottom: scrolled ? "1px solid var(--color-line)" : "1px solid transparent",
-            boxShadow: scrolled ? "var(--shadow-sm-soft)" : "none",
+            background: scrolled ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.6)",
+            backdropFilter: "saturate(180%) blur(20px)",
+            WebkitBackdropFilter: "saturate(180%) blur(20px)",
+            border: "1px solid rgba(226,232,240,0.9)",
+            boxShadow: scrolled
+              ? "0 8px 30px rgba(15,23,42,0.10), 0 1px 0 rgba(255,255,255,0.6) inset"
+              : "0 2px 14px rgba(15,23,42,0.05), 0 1px 0 rgba(255,255,255,0.6) inset",
           }}
         >
-          <Link href="/" className="flex items-center gap-2.5 shrink-0" aria-label="Kriyava SMM home">
-            <span className="h-8.5 w-8.5 overflow-hidden rounded-[10px] shrink-0" style={{ boxShadow: "var(--shadow-glow)" }}>
-              <Image src="/assets/logo-128.png" alt="" width={34} height={34} />
+          <Link href="/" className="flex items-center gap-2.5 shrink-0 group" aria-label="Kriyava SMM home">
+            <span className="h-9 w-9 overflow-hidden rounded-[11px] shrink-0 transition-transform group-hover:scale-105" style={{ boxShadow: "var(--shadow-glow)" }}>
+              <Image src="/assets/logo-128.png" alt="" width={36} height={36} />
             </span>
             <div className="flex flex-col leading-tight">
               <span className="font-display text-[18px] font-extrabold tracking-tight leading-none text-[color:var(--color-ink)]">
                 Kriyava
               </span>
-              <small className="text-[9px] font-semibold tracking-[0.14em] text-slate-500 uppercase mt-[1px]">
+              <small className="text-[8.5px] font-bold tracking-[0.16em] text-slate-400 uppercase mt-[1px]">
                 SMM Panel
               </small>
             </div>
           </Link>
 
-          <div className="hidden items-center gap-4 xl:gap-6 lg:flex mx-4 overflow-hidden">
+          <div className="hidden items-center gap-1 lg:flex">
             {LINKS.map((l) => (
-              <Link key={l.href} href={l.href} className="text-[13.5px] font-bold text-[#475569] transition-colors hover:text-[color:var(--color-ink)] whitespace-nowrap">
+              <Link
+                key={l.href}
+                href={l.href}
+                className="text-[14px] font-semibold text-[#475569] px-3.5 py-2 rounded-lg transition-all hover:text-[color:var(--color-ink)] hover:bg-slate-100/70 whitespace-nowrap"
+              >
                 {l.label}
               </Link>
             ))}
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0">
             <Link
               href="/login"
-              className="btn btn-cta !px-[18px] !py-[9px] !text-[13px] inline-flex rounded-xl shadow-[0_8px_20px_rgba(245,158,11,0.25)] border border-amber-500/10 hover:border-amber-400/30"
+              className="inline-flex items-center rounded-xl bg-[color:var(--color-cta)] px-5 py-2.5 text-[13.5px] font-bold text-[#3b2200] shadow-[0_6px_18px_rgba(245,158,11,0.3)] transition-all hover:-translate-y-0.5 hover:bg-[color:var(--color-cta-600)] hover:shadow-[0_10px_24px_rgba(245,158,11,0.38)]"
             >
               Login
             </Link>
             <button
-              className="grid h-[38px] w-[38px] place-items-center rounded-[10px] border border-[color:var(--color-line)] bg-white text-[color:var(--color-ink)] lg:hidden cursor-pointer hover:bg-[color:var(--color-surface)] transition-colors"
+              className="grid h-[40px] w-[40px] place-items-center rounded-xl border border-[color:var(--color-line)] bg-white/80 text-[color:var(--color-ink)] lg:hidden cursor-pointer hover:bg-slate-100 transition-colors"
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
               onClick={() => setOpen((v) => !v)}

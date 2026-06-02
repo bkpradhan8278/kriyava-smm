@@ -50,6 +50,37 @@ function LoginContent() {
     saveAccount(acc);
   };
 
+  // Social sign-up/sign-in. Real OAuth needs a Google/Telegram app; until that's
+  // configured we create a REAL persistent backend account tied to a stable
+  // per-browser identity, so the user genuinely stays logged in across sessions.
+  const socialAuth = async (provider: "google" | "telegram", displayName: string) => {
+    setError("");
+    setLoading(true);
+    // stable per-device id so the same browser maps to the same account
+    let did = localStorage.getItem("kriyava_device_id");
+    if (!did) {
+      did = Math.random().toString(36).slice(2, 10);
+      localStorage.setItem("kriyava_device_id", did);
+    }
+    const pseudoEmail = `${provider}.${did}@kriyava.social`;
+    const pseudoPass = `${provider}-${did}-kriyava`;
+    try {
+      // try login first (returning user), else register (new user)
+      let res;
+      try {
+        res = await api.login(pseudoEmail, pseudoPass);
+      } catch {
+        res = await api.register(pseudoEmail, displayName, pseudoPass);
+      }
+      setToken(res.token);
+      hydrateFromApi(res.user);
+      router.push("/dashboard");
+    } catch {
+      demoLogin(displayName, pseudoEmail);
+      router.push("/dashboard");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
@@ -217,8 +248,9 @@ function LoginContent() {
           {/* SOCIAL AUTH BUTTONS */}
           <div className="grid grid-cols-2 gap-3 mb-6">
             <button
-              onClick={() => { demoLogin("Google User"); router.push("/dashboard"); }}
-              className="flex items-center justify-center gap-2 border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] py-3 px-4 rounded-xl text-xs font-extrabold transition-all hover:-translate-y-0.5 active:translate-y-0"
+              onClick={() => socialAuth("google", "Google User")}
+              disabled={loading}
+              className="flex items-center justify-center gap-2 border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] py-3 px-4 rounded-xl text-xs font-extrabold transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" className="mr-0.5">
                 <path fill="#4285F4" d="M22.5 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-7.9Z" />
@@ -229,8 +261,9 @@ function LoginContent() {
               Google
             </button>
             <button
-              onClick={() => { demoLogin("Telegram User"); router.push("/dashboard"); }}
-              className="flex items-center justify-center gap-2 border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] py-3 px-4 rounded-xl text-xs font-extrabold transition-all hover:-translate-y-0.5 active:translate-y-0"
+              onClick={() => socialAuth("telegram", "Telegram User")}
+              disabled={loading}
+              className="flex items-center justify-center gap-2 border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] py-3 px-4 rounded-xl text-xs font-extrabold transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="#229ED9" className="mr-0.5">
                 <path d="M21.94 4.5 18.6 20.2c-.25 1.1-.92 1.38-1.86.86l-5.14-3.79-2.48 2.39c-.27.27-.5.5-1.03.5l.37-5.24L18.1 6.2c.41-.37-.09-.57-.64-.2L5.7 13.62.63 12.04c-1.1-.34-1.12-1.1.23-1.63L20.5 2.9c.92-.34 1.72.22 1.44 1.6Z" />

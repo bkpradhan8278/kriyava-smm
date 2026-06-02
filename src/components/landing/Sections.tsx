@@ -202,8 +202,11 @@ export function HowItWorks() {
             <StaggerItem key={s.n}>
               <article className="group relative overflow-hidden rounded-[16px] border border-[color:var(--color-line)] bg-white p-6 text-center transition-all hover:-translate-y-2 hover:shadow-2xl hover:border-slate-300">
                 <span className="absolute left-4 top-3.5 z-2 grid h-[30px] w-[30px] place-items-center rounded-[9px] bg-gradient-to-br from-blue-600 to-cyan-500 font-display text-[13px] font-extrabold text-white shadow-[var(--shadow-glow)]">{s.n}</span>
-                <div className="relative mb-[18px] aspect-square w-full overflow-hidden rounded-[14px] bg-[#06080F] border border-[color:var(--color-line)] opacity-90 group-hover:opacity-100 transition-opacity">
-                  <Image src={`/assets/${s.img}.png`} alt={s.t} fill className="object-cover transition-transform duration-500 group-hover:scale-[1.07] pointer-events-none" sizes="(max-width:768px) 100vw, 25vw" />
+                <div
+                  className="relative mb-[18px] aspect-square w-full overflow-hidden rounded-[14px] border border-[color:var(--color-line)] shadow-inner"
+                  style={{ background: "linear-gradient(150deg,#eaf2ff 0%,#f5f9ff 45%,#ecfdf7 100%)" }}
+                >
+                  <Image src={`/assets/${s.img}.png`} alt={s.t} fill className="object-contain p-2 transition-transform duration-500 group-hover:scale-[1.06] pointer-events-none" sizes="(max-width:768px) 100vw, 25vw" />
                 </div>
                 <h3 className="text-[18px] font-bold text-[color:var(--color-ink)]">{s.t}</h3>
                 <p className="mt-2 text-[13.5px] text-[color:var(--color-muted)] font-medium">{s.d}</p>

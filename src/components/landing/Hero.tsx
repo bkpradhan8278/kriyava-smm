@@ -7,15 +7,6 @@ import { motion, useMotionValue, useTransform } from "framer-motion";
 import { Reveal } from "../Reveal";
 import { CountUp } from "../CountUp";
 
-const PARTICLES = [
-  { icon: "👍", x: "8%", y: "75%", scale: 0.8, delay: 0, duration: 18 },
-  { icon: "❤️", x: "82%", y: "65%", scale: 1.1, delay: 2, duration: 22 },
-  { icon: "✨", x: "15%", y: "25%", scale: 1.0, delay: 4, duration: 16 },
-  { icon: "✈️", x: "78%", y: "15%", scale: 0.9, delay: 1, duration: 20 },
-  { icon: "📸", x: "42%", y: "68%", scale: 1.05, delay: 5, duration: 24 },
-  { icon: "🎵", x: "88%", y: "35%", scale: 0.75, delay: 3, duration: 19 },
-];
-
 export function Hero() {
   return (
     <section className="relative overflow-hidden pt-[clamp(32px,5vw,64px)] pb-16 lg:pb-20 bg-white">
@@ -67,61 +58,16 @@ export function Hero() {
             WebkitMaskImage: "linear-gradient(to top, #000 10%, transparent 90%)",
           }}
         />
-        <motion.span
-          animate={{
-            x: [0, 30, -20, 0],
-            y: [0, -40, 30, 0],
-            scale: [1, 1.08, 0.92, 1],
-          }}
-          transition={{
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
+        {/* Static colour blooms — no animation (animating blur() repaints the whole
+            screen every frame and was the main cause of the laggy feel). */}
+        <span
           className="absolute -top-40 -right-28 h-[520px] w-[520px] rounded-full opacity-50 blur-[80px]"
           style={{ background: "radial-gradient(circle,#bfdbfe,transparent 70%)" }}
         />
-        <motion.span
-          animate={{
-            x: [0, -30, 20, 0],
-            y: [0, 30, -35, 0],
-            scale: [1, 0.92, 1.08, 1],
-          }}
-          transition={{
-            duration: 22,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
+        <span
           className="absolute top-28 -left-40 h-[460px] w-[460px] rounded-full opacity-45 blur-[80px]"
           style={{ background: "radial-gradient(circle,#a5f3fc,transparent 70%)" }}
         />
-
-        {/* Slow drifting social symbols */}
-        {PARTICLES.map((p, idx) => (
-          <motion.span
-            key={idx}
-            animate={{
-              y: ["0px", "-160px", "0px"],
-              x: ["0px", "20px", "-15px", "0px"],
-              rotate: [0, 10, -10, 0],
-              opacity: [0.12, 0.35, 0.12],
-            }}
-            transition={{
-              duration: p.duration,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: p.delay,
-            }}
-            className="absolute text-2xl select-none pointer-events-none filter blur-[0.5px]"
-            style={{
-              left: p.x,
-              top: p.y,
-              transform: `scale(${p.scale})`,
-            }}
-          >
-            {p.icon}
-          </motion.span>
-        ))}
       </div>
 
       <div className="container-x grid items-center gap-10 lg:gap-14 lg:grid-cols-[1.05fr_0.95fr]">
@@ -155,20 +101,20 @@ export function Hero() {
             </div>
           </Reveal>
           <Reveal delay={0.2}>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-6 sm:gap-8">
+            <div className="mt-8 flex flex-row flex-nowrap items-center justify-center lg:justify-start gap-3 sm:gap-6">
               <div className="flex flex-col gap-0.5 text-center lg:text-left items-center lg:items-start">
-                <span className="text-[13px] tracking-[2px] text-[color:var(--color-cta)]">★★★★★</span>
-                <b className="font-display text-[15px] font-extrabold text-[color:var(--color-ink)]">4.9/5 <span className="text-[11px] font-semibold text-[color:var(--color-muted)]">Rating</span></b>
+                <span className="text-[12px] sm:text-[13px] tracking-[2px] text-[color:var(--color-cta)]">★★★★★</span>
+                <b className="font-display text-[14px] sm:text-[15px] font-extrabold text-[color:var(--color-ink)] whitespace-nowrap">4.9/5 <span className="text-[10px] sm:text-[11px] font-semibold text-[color:var(--color-muted)]">Rating</span></b>
               </div>
-              <div className="hidden sm:block h-[28px] w-px bg-[color:var(--color-line)]" />
+              <div className="h-[30px] w-px bg-[color:var(--color-line)] shrink-0" />
               <div className="flex flex-col gap-0.5 text-center lg:text-left items-center lg:items-start">
-                <b className="font-display text-[15px] font-extrabold text-[color:var(--color-ink)]"><CountUp to={50000} suffix="K+" divide={1000} /></b>
-                <span className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase tracking-wide">Happy customers</span>
+                <b className="font-display text-[14px] sm:text-[15px] font-extrabold text-[color:var(--color-ink)]"><CountUp to={50000} suffix="K+" divide={1000} /></b>
+                <span className="text-[9.5px] sm:text-[11px] font-bold text-[color:var(--color-muted)] uppercase tracking-wide whitespace-nowrap">Customers</span>
               </div>
-              <div className="hidden sm:block h-[28px] w-px bg-[color:var(--color-line)]" />
+              <div className="h-[30px] w-px bg-[color:var(--color-line)] shrink-0" />
               <div className="flex flex-col gap-0.5 text-center lg:text-left items-center lg:items-start">
-                <b className="font-display text-[15px] font-extrabold text-[color:var(--color-ink)]"><CountUp to={1000000} suffix="M+" divide={1000000} /></b>
-                <span className="text-[11px] font-bold text-[color:var(--color-muted)] uppercase tracking-wide">Orders delivered</span>
+                <b className="font-display text-[14px] sm:text-[15px] font-extrabold text-[color:var(--color-ink)]"><CountUp to={1000000} suffix="M+" divide={1000000} /></b>
+                <span className="text-[9.5px] sm:text-[11px] font-bold text-[color:var(--color-muted)] uppercase tracking-wide whitespace-nowrap">Orders</span>
               </div>
             </div>
           </Reveal>
