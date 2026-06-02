@@ -24,38 +24,47 @@ export function Hero() {
         aria-hidden
         className="absolute inset-0 -z-10 overflow-hidden"
         style={{
-          background: "radial-gradient(120% 90% at 78% 0%, #eaf2ff 0%, #f4f9ff 38%, #ffffff 70%)"
+          background: "linear-gradient(135deg, #eef4ff 0%, #f5faff 30%, #ffffff 55%, #ecfdf7 100%)"
         }}
       >
-        {/* soft colour wash so the section never looks flat */}
+        {/* rich colour wash so the section glows */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(40% 50% at 85% 10%, rgba(37,99,235,0.14), transparent 70%), radial-gradient(45% 55% at 12% 25%, rgba(6,182,212,0.12), transparent 70%), radial-gradient(50% 60% at 60% 95%, rgba(16,185,129,0.10), transparent 70%)",
+              "radial-gradient(45% 55% at 80% 8%, rgba(37,99,235,0.22), transparent 70%), radial-gradient(45% 55% at 10% 20%, rgba(6,182,212,0.18), transparent 70%), radial-gradient(55% 60% at 55% 100%, rgba(16,185,129,0.16), transparent 70%)",
           }}
         />
-        {/* main grid with a spotlight (radial) fade — the floating 'box' depth effect */}
+        {/* VISIBLE small-box grid — covers the whole hero, gently fades at edges */}
         <div
           className="absolute inset-0"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(37,99,235,0.10) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,0.10) 1px,transparent 1px)",
-            backgroundSize: "46px 46px",
-            maskImage: "radial-gradient(ellipse 75% 65% at 50% 8%, #000 35%, transparent 78%)",
-            WebkitMaskImage: "radial-gradient(ellipse 75% 65% at 50% 8%, #000 35%, transparent 78%)",
+              "linear-gradient(rgba(37,99,235,0.18) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,0.18) 1px,transparent 1px)",
+            backgroundSize: "38px 38px",
+            maskImage: "radial-gradient(ellipse 110% 100% at 60% 25%, #000 60%, transparent 100%)",
+            WebkitMaskImage: "radial-gradient(ellipse 110% 100% at 60% 25%, #000 60%, transparent 100%)",
+          }}
+        />
+        {/* a few glowing accent cells for premium depth */}
+        <div
+          className="absolute inset-0 opacity-70"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 76% 12%, rgba(37,99,235,0.16) 0 18px, transparent 19px), radial-gradient(circle at 85% 22%, rgba(6,182,212,0.16) 0 14px, transparent 15px), radial-gradient(circle at 68% 6%, rgba(16,185,129,0.14) 0 12px, transparent 13px)",
+            backgroundSize: "38px 38px, 38px 38px, 38px 38px",
           }}
         />
         {/* perspective 'floor' grid at the bottom for a true 3D box feel */}
         <div
-          className="absolute inset-x-0 bottom-0 h-[55%] origin-bottom"
+          className="absolute inset-x-0 bottom-0 h-[50%] origin-bottom"
           style={{
-            transform: "perspective(520px) rotateX(58deg)",
+            transform: "perspective(520px) rotateX(60deg)",
             backgroundImage:
-              "linear-gradient(rgba(37,99,235,0.16) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,0.16) 1px,transparent 1px)",
-            backgroundSize: "46px 46px",
-            maskImage: "linear-gradient(to top, #000, transparent 85%)",
-            WebkitMaskImage: "linear-gradient(to top, #000, transparent 85%)",
+              "linear-gradient(rgba(37,99,235,0.22) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,0.22) 1px,transparent 1px)",
+            backgroundSize: "38px 38px",
+            maskImage: "linear-gradient(to top, #000 10%, transparent 90%)",
+            WebkitMaskImage: "linear-gradient(to top, #000 10%, transparent 90%)",
           }}
         />
         <motion.span
