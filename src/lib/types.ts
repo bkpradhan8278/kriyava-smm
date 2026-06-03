@@ -64,6 +64,7 @@ export interface Account {
   name: string;
   email?: string;
   phone?: string;
+  avatarUrl?: string;
   balance: number;
   spent: number;
   orders: Order[];

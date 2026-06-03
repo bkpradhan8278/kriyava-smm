@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Bot, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { api } from "@/lib/api";
 
 interface FaqMsg {
   sender: "bot" | "user";
@@ -65,6 +66,9 @@ const QUICK_QUESTIONS = [
   "Payment methods?",
 ];
 
+const SESSION_KEY = "kriyava_ai_landing_count";
+const MAX_PROMPTS = 5;
+
 function findAnswer(query: string): string {
   const q = query.toLowerCase();
   for (const faq of FAQ_DATA) {
@@ -82,19 +86,46 @@ export function LandingChatbot() {
     },
   ]);
   const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const [usedPrompts, setUsedPrompts] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setUsedPrompts(Number(sessionStorage.getItem(SESSION_KEY) || 0));
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const send = (text: string) => {
+  const send = async (text: string) => {
     if (!text.trim()) return;
+    if (usedPrompts >= MAX_PROMPTS) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "You have used the 5 free AI prompts for this session. Please sign in to continue from the dashboard." },
+      ]);
+      return;
+    }
     const userMsg: FaqMsg = { sender: "user", text: text.trim() };
-    const botMsg: FaqMsg = { sender: "bot", text: findAnswer(text) };
+    const nextCount = usedPrompts + 1;
+    setUsedPrompts(nextCount);
+    sessionStorage.setItem(SESSION_KEY, String(nextCount));
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
-    setTimeout(() => setMessages((prev) => [...prev, botMsg]), 500);
+    setTyping(true);
+    try {
+      const res = await api.aiChat({
+        prompt: text.trim(),
+        surface: "landing",
+        messages: messages.slice(-6).map((m) => ({ role: m.sender === "user" ? "user" : "model", text: m.text })),
+      });
+      setMessages((prev) => [...prev, { sender: "bot", text: res.reply }]);
+    } catch {
+      setMessages((prev) => [...prev, { sender: "bot", text: findAnswer(text) }]);
+    } finally {
+      setTyping(false);
+    }
   };
 
   return (
@@ -151,7 +182,7 @@ export function LandingChatbot() {
                 <div>
                   <h3 className="text-sm font-bold text-white leading-none">Have questions?</h3>
                   <span className="text-[10px] text-white/70 font-medium mt-0.5 block">
-                    FAQ Bot • Instant Answers
+                    Gemini AI • {MAX_PROMPTS - usedPrompts}/{MAX_PROMPTS} left
                   </span>
                 </div>
               </div>
@@ -182,6 +213,16 @@ export function LandingChatbot() {
                   </div>
                 </div>
               ))}
+              {typing && (
+                <div className="flex gap-2">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-white text-[10px] mt-0.5 bg-purple-600/40">
+                    <Bot size={12} />
+                  </span>
+                  <div className="rounded-2xl rounded-tl-none border border-white/[0.06] bg-white/[0.06] px-3 py-2.5 text-[12.5px] text-slate-300">
+                    Thinking...
+                  </div>
+                </div>
+              )}
 
               {/* Quick question chips (show only initially) */}
               {messages.length <= 1 && (
@@ -189,7 +230,7 @@ export function LandingChatbot() {
                   {QUICK_QUESTIONS.map((q) => (
                     <button
                       key={q}
-                      onClick={() => send(q)}
+                      onClick={() => void send(q)}
                       className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-semibold text-slate-300 hover:bg-white/[0.08] hover:text-white transition-colors"
                     >
                       {q}
@@ -203,7 +244,7 @@ export function LandingChatbot() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                send(input);
+                void send(input);
               }}
               className="border-t border-white/[0.06] p-3 flex gap-2 shrink-0"
             >
@@ -211,12 +252,13 @@ export function LandingChatbot() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about pricing, platforms…"
+                placeholder={usedPrompts >= MAX_PROMPTS ? "5 prompt limit reached" : "Ask about pricing, platforms..."}
+                disabled={usedPrompts >= MAX_PROMPTS}
                 className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[12.5px] text-white placeholder-slate-500 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30"
               />
               <button
                 type="submit"
-                disabled={!input.trim()}
+                disabled={!input.trim() || usedPrompts >= MAX_PROMPTS}
                 className="grid h-9 w-9 place-items-center rounded-xl bg-blue-600 text-white hover:bg-blue-500 transition-colors active:scale-95 disabled:opacity-30"
                 aria-label="Send"
               >

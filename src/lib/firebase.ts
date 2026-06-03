@@ -40,6 +40,7 @@ export interface GoogleResult {
   name: string;
   uid: string;
   idToken: string;
+  photoURL?: string;
 }
 
 /** Opens the real Google account-picker popup. Throws if not configured or cancelled. */
@@ -55,5 +56,6 @@ export async function signInWithGoogle(): Promise<GoogleResult> {
     name: cred.user.displayName || "Google User",
     uid: cred.user.uid,
     idToken,
+    photoURL: cred.user.photoURL || undefined,
   };
 }

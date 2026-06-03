@@ -21,10 +21,12 @@ import {
   X,
   LogOut,
   RefreshCw,
+  UserRound,
 } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
 import { fmtINR } from "@/lib/account";
 import { clearToken } from "@/lib/api";
+import { KriyavaAiAgent } from "@/components/landing/KriyavaAiAgent";
 
 const MENU_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -58,14 +60,23 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
+  const firstName = (account.name || "Creator").trim().split(/\s+/)[0] || "Creator";
+  const initials = firstName.slice(0, 2).toUpperCase();
+  const avatar = (size = "h-9 w-9") => (
+    <div className={`${size} overflow-hidden rounded-xl bg-gradient-to-tr from-blue-600 to-purple-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md uppercase shrink-0`}>
+      {account.avatarUrl ? (
+        <Image src={account.avatarUrl} alt="" width={48} height={48} className="h-full w-full object-cover" />
+      ) : initials ? (
+        <span>{initials}</span>
+      ) : (
+        <UserRound size={18} />
+      )}
+    </div>
+  );
+
   return (
     <AuthGuard>
-    <div className="min-h-screen bg-[#090D16] text-white flex flex-col md:flex-row">
-      {/* BACKGROUND GRAPHICS */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-        <span className="absolute top-[10%] left-[20%] h-[380px] w-[380px] rounded-full opacity-[0.08] blur-[120px] bg-blue-500" />
-        <span className="absolute bottom-[20%] right-[10%] h-[420px] w-[420px] rounded-full opacity-[0.08] blur-[140px] bg-purple-500" />
-      </div>
+    <div className="dashboard-shell h-screen bg-[#090D16] text-white flex flex-col md:flex-row overflow-hidden">
 
       {/* MOBILE HEADER */}
       <div className="md:hidden flex h-16 items-center justify-between px-4 border-b border-white/5 bg-[#0D1321]/90 backdrop-blur-md sticky top-0 z-40">
@@ -80,6 +91,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none">Wallet</div>
             <div className="text-xs font-black text-emerald-400 mt-0.5">{fmtINR(account.balance)}</div>
           </div>
+          {avatar("h-9 w-9")}
           <button
             onClick={() => setMobileOpen((o) => !o)}
             className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5"
@@ -90,9 +102,18 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
+      {mobileOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-[45] bg-black/55 md:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close sidebar overlay"
+        />
+      )}
+
       {/* SIDEBAR */}
       <aside
-        className={`fixed inset-y-0 left-0 w-64 bg-[#0D1321] border-r border-white/5 flex flex-col z-50 transition-transform duration-300 md:translate-x-0 md:static ${
+        className={`fixed inset-y-0 left-0 w-[min(18rem,86vw)] bg-[#0D1321] border-r border-white/5 flex flex-col z-50 transition-transform duration-300 md:w-64 md:translate-x-0 md:static md:h-screen md:shrink-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -113,7 +134,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* NAVIGATION LINKS */}
-        <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1.5 scrollbar-thin">
+        <nav className="min-h-0 flex-1 overflow-y-auto px-4 py-5 space-y-1.5 scrollbar-thin">
           {MENU_ITEMS.map((item) => {
             const active = activeLink(item.href);
             return (
@@ -133,34 +154,12 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-
-        {/* FOOTER USER CARD */}
-        <div className="p-4 border-t border-white/5 bg-white/[0.01]">
-          <div className="flex items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-blue-600/20 text-blue-400 font-extrabold flex items-center justify-center text-sm shadow-inner uppercase">
-                {account.name.slice(0, 2)}
-              </div>
-              <div className="max-w-[12ch]">
-                <div className="text-xs font-bold text-white truncate">{account.name}</div>
-                <div className="text-[10px] text-slate-400 font-medium">welcome back</div>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="h-8 w-8 grid place-items-center rounded-lg hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 transition-colors"
-              title="Logout"
-            >
-              <LogOut size={16} />
-            </button>
-          </div>
-        </div>
       </aside>
 
       {/* MAIN CONTAINER */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         {/* HEADER */}
-        <header className="hidden md:flex h-16 items-center justify-between px-8 border-b border-white/5 bg-[#090D16]/60 backdrop-blur-md sticky top-0 z-30">
+        <header className="hidden md:flex h-16 shrink-0 items-center justify-between px-8 border-b border-white/5 bg-[#090D16]/80 backdrop-blur-md z-30">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-slate-400">
               {pathname === "/dashboard"
@@ -169,7 +168,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             </h2>
           </div>
 
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4">
             {/* Wallet summary */}
             <div className="flex items-center gap-3 bg-white/[0.02] border border-white/5 rounded-xl px-4 py-2">
               <div className="flex items-center gap-2">
@@ -216,22 +215,29 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             {/* User Profile display */}
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <div className="text-xs font-bold leading-none">{account.name}</div>
+                <div className="text-xs font-bold leading-none">{firstName}</div>
                 <div className="text-[10px] text-blue-400 font-bold mt-1">Creator Tier</div>
               </div>
-              <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-purple-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md uppercase">
-                {account.name.slice(0, 2)}
-              </div>
+              {avatar()}
+              <button
+                onClick={handleLogout}
+                className="h-9 w-9 grid place-items-center rounded-xl bg-white/[0.02] border border-white/5 hover:bg-rose-500/10 text-slate-300 hover:text-rose-400 transition-colors"
+                title="Logout"
+                aria-label="Logout"
+              >
+                <LogOut size={16} />
+              </button>
             </div>
           </div>
         </header>
 
         {/* SCROLLABLE MAIN CONTENT */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 scrollbar-thin">
+        <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 scrollbar-thin">
           {children}
         </main>
       </div>
 
+      <KriyavaAiAgent />
     </div>
     </AuthGuard>
   );

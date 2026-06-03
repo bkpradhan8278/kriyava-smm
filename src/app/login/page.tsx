@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Check, Lock, Sparkles, AlertCircle, Eye, EyeOff, RefreshCw } from "lucide-react";
-import { loadAccount, saveAccount } from "@/lib/account";
+import { createAccountCache, saveAccount } from "@/lib/account";
 import { api, setToken, ApiError } from "@/lib/api";
 import { isFirebaseConfigured, signInWithGoogle } from "@/lib/firebase";
 
@@ -29,13 +29,20 @@ function LoginContent() {
 
   // Hydrate the localStorage account from an API user, so the existing
   // dashboard (which reads localStorage) shows real backend data.
-  const hydrateFromApi = (u: { name: string; email: string; balance: number; spent: number }) => {
-    const acc = loadAccount();
-    acc.name = u.name;
-    acc.email = u.email;
-    acc.balance = u.balance;
-    acc.spent = u.spent;
-    saveAccount(acc);
+  const hydrateFromApi = (
+    u: { name: string; email: string; balance: number; spent: number; apiKey?: string },
+    avatarUrl?: string,
+  ) => {
+    saveAccount(
+      createAccountCache({
+        name: u.name || "Creator",
+        email: u.email,
+        avatarUrl,
+        balance: u.balance,
+        spent: u.spent,
+        apiKey: u.apiKey,
+      }),
+    );
   };
 
   // Google → real Firebase account-picker popup → real backend account.
@@ -50,7 +57,7 @@ function LoginContent() {
       const g = await signInWithGoogle(); // opens Google popup
       const res = await api.social(g.email, g.name); // real backend account
       setToken(res.token);
-      hydrateFromApi(res.user);
+      hydrateFromApi(res.user, g.photoURL);
       router.push("/dashboard");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign-in cancelled";

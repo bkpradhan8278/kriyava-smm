@@ -65,6 +65,10 @@ export interface ApiUser {
   spent: number;
   apiKey: string;
 }
+export interface ApiAiMessage {
+  role: "user" | "model";
+  text: string;
+}
 export interface ApiOrder {
   id: string;
   serviceId: string;
@@ -147,6 +151,9 @@ export const api = {
     ),
   verifyPayment: (p: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
     request<{ added: number; balance: number }>("/payments/verify", { method: "POST", body: p }),
+
+  aiChat: (p: { prompt: string; surface: "dashboard" | "landing"; messages?: ApiAiMessage[]; context?: Record<string, unknown> }) =>
+    request<{ reply: string; provider: string }>("/ai/chat", { method: "POST", body: p, auth: false }),
 };
 
 // Loads the Razorpay checkout script once.

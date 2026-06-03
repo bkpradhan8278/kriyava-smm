@@ -82,3 +82,51 @@ a { color: inherit; text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* ---- dashboard app frame + light theme overrides ---- */
+.dashboard-shell {
+  color-scheme: dark;
+}
+.dashboard-shell .backdrop-blur-md,
+.dashboard-shell .backdrop-blur-xl {
+  backdrop-filter: blur(8px);
+}
+.dashboard-shell * {
+  letter-spacing: 0;
+}
+html[data-theme="light"] .dashboard-shell {
+  color-scheme: light;
+  background: #f6f8fb !important;
+  color: #0f172a !important;
+}
+html[data-theme="light"] .dashboard-shell [class*="#090D16"],
+html[data-theme="light"] .dashboard-shell [class*="#0D1321"] {
+  background-color: #ffffff !important;
+}
+html[data-theme="light"] .dashboard-shell [class*="bg-white/["],
+html[data-theme="light"] .dashboard-shell [class*="bg-white\\/["] {
+  background-color: rgba(15, 23, 42, .035) !important;
+}
+html[data-theme="light"] .dashboard-shell [class*="text-white"] {
+  color: #0f172a !important;
+}
+html[data-theme="light"] .dashboard-shell [class*="text-slate-400"],
+html[data-theme="light"] .dashboard-shell [class*="text-slate-500"] {
+  color: #64748b !important;
+}
+html[data-theme="light"] .dashboard-shell [class*="border-white/"],
+html[data-theme="light"] .dashboard-shell [class*="border-white\\/"] {
+  border-color: #e2e8f0 !important;
+}
+html[data-theme="light"] .dashboard-shell input,
+html[data-theme="light"] .dashboard-shell select,
+html[data-theme="light"] .dashboard-shell textarea {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #dbe3ee !important;
+}
+@media (max-width: 767px) {
+  .dashboard-shell main {
+    padding-bottom: 5.5rem;
+  }
+}

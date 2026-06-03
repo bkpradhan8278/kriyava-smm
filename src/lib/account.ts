@@ -29,6 +29,19 @@ export function blank(): Account {
   return { name: "Creator", balance: 0, spent: 0, orders: [], favorites: [] };
 }
 
+export function createAccountCache(a: Partial<Account>): Account {
+  return {
+    ...blank(),
+    ...a,
+    balance: Number(a.balance || 0),
+    spent: Number(a.spent || 0),
+    orders: a.orders || [],
+    favorites: a.favorites || [],
+    txns: a.txns || [],
+    tickets: a.tickets || [],
+  };
+}
+
 export function saveAccount(a: Account) {
   if (!isBrowser()) return;
   localStorage.setItem(KEY, JSON.stringify(a));

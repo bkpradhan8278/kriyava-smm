@@ -4,6 +4,7 @@ import { Sparkles, Send, X, Bot, User, ChevronRight, CheckCircle2 } from "lucide
 import { useAccount } from "@/lib/useAccount";
 import { useMarket } from "@/lib/useServices";
 import { fmtINR } from "@/lib/account";
+import { api } from "@/lib/api";
 import type { MarketService } from "@/lib/types";
 
 interface Message {
@@ -13,6 +14,9 @@ interface Message {
   at: number;
 }
 
+const SESSION_KEY = "kriyava_ai_dashboard_count";
+const MAX_PROMPTS = 5;
+
 export function KriyavaAiAgent() {
   const { account } = useAccount();
   const { services } = useMarket();
@@ -20,6 +24,7 @@ export function KriyavaAiAgent() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [typing, setTyping] = useState(false);
+  const [usedPrompts, setUsedPrompts] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Initialize chatbot welcome message
@@ -37,6 +42,7 @@ Try asking:
         at: Date.now(),
       },
     ]);
+    setUsedPrompts(Number(sessionStorage.getItem(SESSION_KEY) || 0));
   }, []);
 
   // Scroll to bottom on new message
@@ -46,20 +52,61 @@ Try asking:
     }
   }, [messages, typing]);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
+    if (usedPrompts >= MAX_PROMPTS) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: "Session limit reached. You can ask 5 AI prompts per browser session. Refresh or come back later to continue.",
+          at: Date.now(),
+        },
+      ]);
+      return;
+    }
 
     const userText = input.trim();
     setInput("");
+    const nextCount = usedPrompts + 1;
+    setUsedPrompts(nextCount);
+    sessionStorage.setItem(SESSION_KEY, String(nextCount));
     
     // Add user message
     setMessages((prev) => [...prev, { sender: "user", text: userText, at: Date.now() }]);
     setTyping(true);
 
-    setTimeout(() => {
+    try {
+      const res = await api.aiChat({
+        prompt: userText,
+        surface: "dashboard",
+        messages: messages
+          .filter((m) => m.sender === "user" || m.sender === "bot")
+          .slice(-6)
+          .map((m) => ({ role: m.sender === "user" ? "user" : "model", text: m.text })),
+        context: {
+          name: account.name,
+          balance: account.balance,
+          spent: account.spent,
+          orders: account.orders.length,
+          sampleServices: services.slice(0, 8).map((s) => ({
+            id: s.id,
+            name: s.name,
+            platform: s.platform,
+            category: s.category,
+            price: s.price,
+            quality: s.quality,
+            min: s.min,
+            max: s.max,
+          })),
+        },
+      });
+      setTyping(false);
+      setMessages((prev) => [...prev, { sender: "bot", text: res.reply, at: Date.now() }]);
+    } catch {
       processCommand(userText);
-    }, 900);
+    }
   };
 
   const processCommand = (query: string) => {
@@ -257,6 +304,7 @@ Go to the [Add Funds](/add-funds) page and complete a verified Razorpay top-up f
       >
         <Sparkles size={18} className="animate-pulse" />
         <span>Ask Kriyava AI</span>
+        <span className="text-[11px] opacity-80">{MAX_PROMPTS - usedPrompts}/{MAX_PROMPTS}</span>
         <span className="relative flex h-2.5 w-2.5">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
@@ -266,7 +314,7 @@ Go to the [Add Funds](/add-funds) page and complete a verified Razorpay top-up f
       {/* chat dialog */}
       {open && (
         <div
-          className="fixed bottom-24 right-6 z-55 flex h-[500px] w-[370px] flex-col rounded-2xl border border-[color:var(--color-line)] bg-white/95 shadow-2xl backdrop-blur-md overflow-hidden transition-all duration-300"
+          className="fixed bottom-24 right-4 z-[55] flex h-[min(500px,calc(100vh-8rem))] w-[calc(100vw-2rem)] max-w-[370px] flex-col rounded-2xl border border-white/10 bg-[#0D1321]/95 shadow-2xl overflow-hidden transition-all duration-300 sm:right-6"
           style={{ boxShadow: "var(--shadow-lg-soft)" }}
         >
           {/* Header */}
@@ -292,7 +340,7 @@ Go to the [Add Funds](/add-funds) page and complete a verified Razorpay top-up f
           </div>
 
           {/* Messages body */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#090D16]">
             {messages.map((m, idx) => (
               <div key={idx} className={`flex gap-2.5 ${m.sender === "user" ? "flex-row-reverse" : ""}`}>
                 <span
@@ -307,7 +355,7 @@ Go to the [Add Funds](/add-funds) page and complete a verified Razorpay top-up f
                     className={`rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed shadow-sm ${
                       m.sender === "user"
                         ? "bg-[color:var(--color-primary)] text-white rounded-tr-none"
-                        : "bg-white border border-[color:var(--color-line-soft)] text-[color:var(--color-ink)] rounded-tl-none font-medium"
+                        : "bg-white/[0.06] border border-white/[0.08] text-slate-100 rounded-tl-none font-medium"
                     }`}
                     style={{ whiteSpace: "pre-line" }}
                   >
@@ -335,17 +383,18 @@ Go to the [Add Funds](/add-funds) page and complete a verified Razorpay top-up f
           </div>
 
           {/* Form input */}
-          <form onSubmit={handleSend} className="border-t border-[color:var(--color-line)] p-3 bg-white flex gap-2">
+          <form onSubmit={handleSend} className="border-t border-white/10 p-3 bg-[#0D1321] flex gap-2">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask me to find cheapest services, check balance..."
-              className="flex-1 rounded-[10px] border border-[color:var(--color-line)] px-3.5 py-2 text-[13px] text-[color:var(--color-ink)] placeholder-[#94a3b8] focus:border-[color:var(--color-primary)] focus:ring-1 focus:ring-[color:var(--color-primary)] outline-none"
+              placeholder={usedPrompts >= MAX_PROMPTS ? "5 prompt limit reached" : "Ask services, balance, settings..."}
+              disabled={usedPrompts >= MAX_PROMPTS}
+              className="flex-1 rounded-[10px] border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[13px] text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none disabled:opacity-50"
             />
             <button
               type="submit"
-              disabled={!input.trim()}
+              disabled={!input.trim() || usedPrompts >= MAX_PROMPTS}
               className="grid h-9 w-9 place-items-center rounded-[10px] bg-[color:var(--color-primary)] text-white hover:bg-[color:var(--color-primary-600)] transition-colors active:scale-95 disabled:opacity-40"
               aria-label="Send message"
             >

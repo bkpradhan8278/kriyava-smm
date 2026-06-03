@@ -34,7 +34,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{document.documentElement.setAttribute('data-theme',localStorage.getItem('kriyava_theme')||'dark')}catch(e){}",
+          }}
+        />
+      </head>
       <body className={`${inter.variable} ${interTight.variable}`}>{children}</body>
     </html>
   );
