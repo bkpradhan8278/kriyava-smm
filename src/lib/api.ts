@@ -165,6 +165,8 @@ export const api = {
   aiChat: (p: { prompt: string; surface: "dashboard" | "landing"; messages?: ApiAiMessage[]; context?: Record<string, unknown> }) =>
     request<{ reply: string; provider: string }>("/ai/chat", { method: "POST", body: p, auth: false }),
 
+  myReferrals: () => request<{ code: string|null; link: string|null; earned: number; referredCount: number; commissionPct: number; recentEarnings: Array<{amount:number;note:string|null;time:string}> }>("/referrals/me"),
+
   adminSummary: () => request<AdminSummaryResponse>("/admin/summary"),
   adminAddFunds: (email: string, amount: number, note?: string) =>
     request<{ ok: boolean; added: number; newBalance: number }>("/admin/add-funds", {

@@ -7,7 +7,10 @@ import { RefreshCw } from "lucide-react";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [status, setStatus] = useState<"loading" | "ok" | "redirect">("loading");
+  // Show content immediately if we already have a token + cached account.
+  // api.me() still runs in background to refresh data; only blocks if no token at all.
+  const initialOk = typeof window !== "undefined" && !!getToken() && !!loadAccount()?.email;
+  const [status, setStatus] = useState<"loading" | "ok" | "redirect">(initialOk ? "ok" : "loading");
 
   useEffect(() => {
     if (!getToken()) {
@@ -40,14 +43,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       });
   }, [router]);
 
-  if (status === "loading" || status === "redirect") {
+  if (status === "redirect") return null;
+  // While validating but we have cached data — render children immediately (no spinner)
+  if (status === "loading") {
     return (
       <div className="min-h-screen bg-[#090D16] text-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="animate-spin text-blue-500" size={32} />
-          <span className="text-xs font-bold text-slate-400">
-            Verifying authentication…
-          </span>
+          <RefreshCw className="animate-spin text-blue-500" size={28} />
+          <span className="text-xs font-bold text-slate-400">Loading…</span>
         </div>
       </div>
     );
