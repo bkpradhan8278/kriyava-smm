@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Sparkles, Send, X, Bot, User, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Sparkles, Send, X, Bot, User, CheckCircle2 } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
 import { useMarket } from "@/lib/useServices";
 import { fmtINR } from "@/lib/account";
@@ -292,29 +292,35 @@ Go to the [Add Funds](/add-funds) page and complete a verified Razorpay top-up f
 
   return (
     <>
-      {/* floating button */}
+      {/* floating icon button — compact FAB */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full px-5 py-3 text-[14.5px] font-bold text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+        className="fixed bottom-5 right-5 z-50 h-12 w-12 rounded-full flex items-center justify-center text-white shadow-xl transition-all hover:scale-110 active:scale-95"
         style={{
-          background: "linear-gradient(135deg, #7C3AED, #2563EB)",
-          boxShadow: "0 8px 30px rgba(124, 58, 237, 0.4)",
+          background: open
+            ? "linear-gradient(135deg, #1d4ed8, #5b21b6)"
+            : "linear-gradient(135deg, #7C3AED, #2563EB)",
+          boxShadow: "0 6px 24px rgba(124,58,237,0.45)",
         }}
         aria-label="Open Kriyava AI Assistant"
       >
-        <Sparkles size={18} className="animate-pulse" />
-        <span>Ask Kriyava AI</span>
-        <span className="text-[11px] opacity-80">{MAX_PROMPTS - usedPrompts}/{MAX_PROMPTS}</span>
-        <span className="relative flex h-2.5 w-2.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-        </span>
+        {open ? <X size={18} /> : <Sparkles size={18} />}
+        {/* remaining prompts badge */}
+        {!open && (MAX_PROMPTS - usedPrompts) < MAX_PROMPTS && (
+          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-emerald-500 border border-[#090D16] text-[9px] font-black text-white grid place-items-center leading-none">
+            {MAX_PROMPTS - usedPrompts}
+          </span>
+        )}
+        {/* live dot */}
+        {!open && (
+          <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-[#090D16]" />
+        )}
       </button>
 
       {/* chat dialog */}
       {open && (
         <div
-          className="fixed bottom-24 right-4 z-[55] flex h-[min(500px,calc(100vh-8rem))] w-[calc(100vw-2rem)] max-w-[370px] flex-col rounded-2xl border border-white/10 bg-[#0D1321]/95 shadow-2xl overflow-hidden transition-all duration-300 sm:right-6"
+          className="fixed bottom-20 right-4 z-[55] flex h-[min(500px,calc(100vh-6rem))] w-[calc(100vw-2rem)] max-w-[370px] flex-col rounded-2xl border border-white/10 bg-[#0D1321]/95 shadow-2xl overflow-hidden transition-all duration-300 sm:right-5"
           style={{ boxShadow: "var(--shadow-lg-soft)" }}
         >
           {/* Header */}
