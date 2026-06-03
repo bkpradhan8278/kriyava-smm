@@ -181,6 +181,14 @@ export default function DashboardPage() {
 
   return (
     <DashboardShell>
+      {/* LOW BALANCE BANNER */}
+      {account.balance < 50 && (
+        <div className="mb-5 flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-xs font-bold text-amber-400">
+          <Activity size={14} className="shrink-0" />
+          <span>Wallet balance low — {fmtINR(account.balance)}. <Link href="/add-funds" className="underline underline-offset-2 hover:text-amber-300">Top up now →</Link></span>
+        </div>
+      )}
+
       {/* GREETING */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
         <div className="text-left">

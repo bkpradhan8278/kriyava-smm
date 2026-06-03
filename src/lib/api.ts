@@ -163,7 +163,30 @@ export const api = {
 
   aiChat: (p: { prompt: string; surface: "dashboard" | "landing"; messages?: ApiAiMessage[]; context?: Record<string, unknown> }) =>
     request<{ reply: string; provider: string }>("/ai/chat", { method: "POST", body: p, auth: false }),
+
+  adminSummary: () => request<AdminSummaryResponse>("/admin/summary"),
 };
+
+export interface AdminOrderRow {
+  id: string; service: string; platform: string | null;
+  qty: number; charge: number; providerCost: number; profit: number;
+  provider: string; status: string; time: string;
+}
+export interface AdminUserRow {
+  id: string; name: string; email: string;
+  balance: number; spent: number; role: string; joined: string;
+}
+export interface AdminDepositRow { amount: number; method: string; note?: string | null; time: string; }
+export interface AdminSummaryResponse {
+  asOf: string; totalUsers: number;
+  providerStatus: { live: boolean; services: number; providers: Record<string,number>; balances: Record<string,string> };
+  today: { count: number; activeCount: number; failedCount: number; revenue: number; providerCost: number; profit: number; orders: AdminOrderRow[] };
+  allTime: { count: number; activeCount: number; failedCount: number; revenue: number; providerCost: number; profit: number };
+  recentOrders: AdminOrderRow[];
+  users: AdminUserRow[];
+  deposits: AdminDepositRow[];
+  todayDeposits: number;
+}
 
 // Loads the Razorpay checkout script once.
 export function loadRazorpay(): Promise<boolean> {

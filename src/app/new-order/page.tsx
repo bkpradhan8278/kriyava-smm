@@ -21,8 +21,8 @@ export default function NewOrderPage() {
   const [qty, setQty] = useState(1000);
   const [charge, setCharge] = useState(0);
   
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [routeLogs, setRouteLogs] = useState<string[]>([]);
-
   const [toastMsg, setToastMsg] = useState("");
 
   // Extract platforms
@@ -33,9 +33,28 @@ export default function NewOrderPage() {
     }
   }, [services]);
 
-  // Sync services based on platform
+  // Category labels extracted from service names
+  const SERVICE_CATEGORIES = ["All", "Followers", "Likes", "Views", "Comments", "Reels", "Subscribers", "Members", "Story"];
+  function getCategory(name: string) {
+    const n = name.toLowerCase();
+    if (n.includes("follower")) return "Followers";
+    if (n.includes("like")) return "Likes";
+    if (n.includes("view") || n.includes("watch")) return "Views";
+    if (n.includes("comment")) return "Comments";
+    if (n.includes("reel")) return "Reels";
+    if (n.includes("subscriber") || n.includes("sub")) return "Subscribers";
+    if (n.includes("member")) return "Members";
+    if (n.includes("story") || n.includes("stories")) return "Story";
+    return "Other";
+  }
+
+  // Sync services based on platform + category
   const filteredServices = services
-    .filter((s) => s.platform === selectedPlatform)
+    .filter((s) => {
+      if (s.platform !== selectedPlatform) return false;
+      if (selectedCategory !== "All" && getCategory(s.name) !== selectedCategory) return false;
+      return true;
+    })
     .sort((a, b) => a.price - b.price);
 
   useEffect(() => {
@@ -44,7 +63,8 @@ export default function NewOrderPage() {
     } else {
       setSelectedServiceId("");
     }
-  }, [selectedPlatform, services]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlatform, selectedCategory, services]);
 
   const activeService = services.find((s) => s.id === selectedServiceId);
 
@@ -105,8 +125,16 @@ export default function NewOrderPage() {
 
   return (
     <DashboardShell>
+      {/* LOW BALANCE BANNER */}
+      {account.balance < 50 && (
+        <div className="mb-5 flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-3 text-xs font-bold text-amber-400">
+          <AlertTriangle size={15} className="shrink-0" />
+          <span>Wallet balance is low ({fmtINR(account.balance)}). <Link href="/add-funds" className="underline underline-offset-2 hover:text-amber-300">Add funds →</Link></span>
+        </div>
+      )}
+
       {/* PAGE TITLE */}
-      <div className="text-left mb-8">
+      <div className="text-left mb-6">
         <h1 className="font-display text-2xl md:text-3xl font-black text-white">New Order</h1>
         <p className="text-sm text-slate-400 mt-1">Pick a service, paste your link, and grow. Orders are auto-routed securely across providers.</p>
       </div>
@@ -121,15 +149,15 @@ export default function NewOrderPage() {
             </span>
           </div>
 
-          {/* Platforms tabs */}
+          {/* Platform chips — horizontal scroll on mobile */}
           <div className="flex flex-col">
             <label className="text-[10.5px] font-extrabold uppercase tracking-wide text-slate-400 mb-2">Select Platform</label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
               {platforms.map((p) => (
                 <button
                   key={p}
-                  onClick={() => setSelectedPlatform(p)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  onClick={() => { setSelectedPlatform(p); setSelectedCategory("All"); }}
+                  className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                     selectedPlatform === p
                       ? "bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.25)]"
                       : "bg-white/[0.02] border border-white/5 text-slate-400 hover:text-white"
@@ -141,16 +169,40 @@ export default function NewOrderPage() {
             </div>
           </div>
 
+          {/* Category filter dropdown */}
+          <div className="flex flex-col">
+            <label className="text-[10.5px] font-extrabold uppercase tracking-wide text-slate-400 mb-2">Category</label>
+            <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
+              {SERVICE_CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                    selectedCategory === cat
+                      ? "bg-emerald-600 text-white"
+                      : "bg-white/[0.02] border border-white/5 text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Service Selector */}
           <div className="flex flex-col">
-            <label className="text-[10.5px] font-extrabold uppercase tracking-wide text-slate-400 mb-2">Growth Service</label>
+            <label className="text-[10.5px] font-extrabold uppercase tracking-wide text-slate-400 mb-2">
+              Growth Service <span className="text-slate-600 normal-case font-medium">({filteredServices.length} available)</span>
+            </label>
             <select
               value={selectedServiceId}
               onChange={(e) => setSelectedServiceId(e.target.value)}
               className="w-full rounded-xl border border-white/5 bg-white/[0.01] px-4 py-3.5 text-xs text-white outline-none focus:border-blue-500 focus:bg-white/[0.03]"
             >
               {loading ? (
-                <option>Loading platform options...</option>
+                <option>Loading services...</option>
+              ) : filteredServices.length === 0 ? (
+                <option>No services in this category</option>
               ) : (
                 filteredServices.map((s) => (
                   <option key={s.id} value={s.id} className="bg-[#090D16] text-white">

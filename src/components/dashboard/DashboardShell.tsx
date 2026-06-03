@@ -22,6 +22,7 @@ import {
   LogOut,
   RefreshCw,
   UserRound,
+  Shield,
 } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
 import { fmtINR } from "@/lib/account";
@@ -42,6 +43,8 @@ const MENU_ITEMS = [
   { href: "/tickets", label: "Tickets", icon: Ticket },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
+
+const ADMIN_EMAIL = "getkriyava@gmail.com";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const { account } = useAccount();
@@ -155,6 +158,21 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+          {/* Admin link — only for admin email */}
+          {account.email === ADMIN_EMAIL && (
+            <Link
+              href="/admin"
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3.5 px-4 py-3 rounded-xl text-[13.5px] font-bold transition-all mt-2 border border-amber-500/20 ${
+                pathname.startsWith("/admin")
+                  ? "bg-amber-600/20 text-amber-400"
+                  : "text-amber-500/70 hover:text-amber-400 hover:bg-amber-500/10"
+              }`}
+            >
+              <Shield size={17} />
+              <span>Admin CRM</span>
+            </Link>
+          )}
         </nav>
 
         <div className="shrink-0 border-t border-white/5 bg-white/[0.01] p-4">
