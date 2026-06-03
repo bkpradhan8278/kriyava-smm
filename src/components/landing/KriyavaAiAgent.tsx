@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Sparkles, Send, X, Bot, User, ChevronRight, CheckCircle2 } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
 import { useMarket } from "@/lib/useServices";
-import { placeOrder, fmtINR } from "@/lib/account";
+import { fmtINR } from "@/lib/account";
 import type { MarketService } from "@/lib/types";
 
 interface Message {
@@ -14,7 +14,7 @@ interface Message {
 }
 
 export function KriyavaAiAgent() {
-  const { account, refresh } = useAccount();
+  const { account } = useAccount();
   const { services } = useMarket();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -116,7 +116,7 @@ Try asking:
         return;
       }
 
-      executeSimulatedOrder(targetSvc, qty, link);
+      prepareOrderSuggestion(targetSvc, qty, link);
       return;
     }
 
@@ -147,7 +147,7 @@ Try asking:
                   ...prev,
                   { sender: "user", text: `Order 1,000 units on service ${bestSvc.id}`, at: Date.now() },
                 ]);
-                executeSimulatedOrder(bestSvc, 1000, "https://instagram.com/myprofile");
+                prepareOrderSuggestion(bestSvc, 1000, "https://instagram.com/myprofile");
               }}
               className="btn btn-primary btn-block !py-2 !text-xs mt-3"
             >
@@ -185,7 +185,7 @@ Try asking:
     return matches.sort((a, b) => a.price - b.price)[0];
   };
 
-  const executeSimulatedOrder = (svc: MarketService, qty: number, link: string) => {
+  const prepareOrderSuggestion = (svc: MarketService, qty: number, link: string) => {
     const total = +((svc.price * qty) / 1000).toFixed(2);
 
     if (account.balance < total) {
@@ -195,33 +195,38 @@ Try asking:
           sender: "bot",
           text: `❌ **Insufficient Funds**: Ordering ${qty.toLocaleString()} units of *${svc.name.slice(0, 40)}...* costs **${fmtINR(total)}**, but you only have **${fmtINR(account.balance)}** in your wallet.
 
-Go to the [Add Funds](/add-funds) page or ask me to mock a deposit!`,
+Go to the [Add Funds](/add-funds) page and complete a verified Razorpay top-up first.`,
           at: Date.now(),
         },
       ]);
       return;
     }
 
-    const res = placeOrder(svc, qty, link);
-    if (res.ok) {
-      refresh();
+    const res = {
+      order: {
+        id: "ready",
+        service: svc.name,
+        charge: total,
+      },
+      balance: account.balance,
+    };
+    if (res.order) {
       
       const card = (
         <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/50 p-4 shadow-sm text-left">
           <div className="flex items-center gap-2 text-emerald-800 font-extrabold text-sm mb-2">
             <CheckCircle2 size={18} className="text-emerald-600" />
-            Order Placed Successfully!
+            Order Ready
           </div>
           <div className="text-xs text-emerald-800 space-y-1.5">
-            <div>Order ID: <b className="font-semibold">{res.order.id}</b></div>
             <div>Service: <span className="font-medium">{res.order.service}</span></div>
             <div>Quantity: <span className="font-bold">{qty.toLocaleString()} units</span></div>
             <div>Total Cost: <span className="font-extrabold">{fmtINR(res.order.charge)}</span></div>
             <div>Target Link: <span className="underline truncate block max-w-[20ch]">{link}</span></div>
           </div>
           <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-emerald-700 bg-white/80 rounded-lg px-2.5 py-1.5">
-            <span>New Wallet Balance:</span>
-            <span>{fmtINR(res.balance)}</span>
+            <span>Next step:</span>
+            <span>Place it in dashboard</span>
           </div>
         </div>
       );
@@ -230,7 +235,7 @@ Go to the [Add Funds](/add-funds) page or ask me to mock a deposit!`,
         ...prev,
         {
           sender: "bot",
-          text: `🚀 Success! I've placed the order using Kriyava's automatic multi-provider router. It was dispatched to **${svc.provider}** in failover mode.`,
+          text: "Great choice. I found the best matching service. Please place it from the dashboard so the backend can verify wallet balance and create the order securely.",
           card,
           at: Date.now(),
         },

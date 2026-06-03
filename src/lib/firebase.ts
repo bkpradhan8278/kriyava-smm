@@ -2,8 +2,7 @@
 // KRIYAVA — Firebase Auth (Google sign-in)
 // Config comes from NEXT_PUBLIC_FIREBASE_* env vars.
 // If not configured, isFirebaseConfigured() returns false and
-// the UI falls back to the demo/pseudo-account flow — so the
-// site never breaks before Firebase is set up.
+// the login page asks users to continue with email auth.
 // ============================================================
 import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import {

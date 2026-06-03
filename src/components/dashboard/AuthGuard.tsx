@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { loadAccount } from "@/lib/account";
+import { api, clearToken, getToken } from "@/lib/api";
 import { RefreshCw } from "lucide-react";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -9,13 +9,18 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<"loading" | "ok" | "redirect">("loading");
 
   useEffect(() => {
-    const account = loadAccount();
-    if (account.email) {
-      setStatus("ok");
-    } else {
+    if (!getToken()) {
       setStatus("redirect");
       router.replace("/login");
+      return;
     }
+    api.me()
+      .then(() => setStatus("ok"))
+      .catch(() => {
+        clearToken();
+        setStatus("redirect");
+        router.replace("/login");
+      });
   }, [router]);
 
   if (status === "loading" || status === "redirect") {

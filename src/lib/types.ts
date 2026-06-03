@@ -72,5 +72,4 @@ export interface Account {
   tickets?: Ticket[];
   apiKey?: string;
   prefs?: Record<string, any>;
-  _seeded?: boolean;
 }

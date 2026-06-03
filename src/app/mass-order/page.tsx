@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Play, Clipboard, CheckCircle2, AlertCircle, HelpCircle } from "lucide-react";
+import { Play, Clipboard, CheckCircle2, AlertCircle } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
 import { useMarket } from "@/lib/useServices";
-import { placeOrder, fmtINR } from "@/lib/account";
+import { fmtINR } from "@/lib/account";
+import { api } from "@/lib/api";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import type { MarketService } from "@/lib/types";
 
@@ -19,7 +20,7 @@ interface MassPreviewItem {
 }
 
 export default function MassOrderPage() {
-  const { account, refresh } = useAccount();
+  const { account, sync } = useAccount();
   const { services } = useMarket();
 
   const [bulkText, setBulkText] = useState("");
@@ -27,16 +28,6 @@ export default function MassOrderPage() {
   const [totalCharge, setTotalCharge] = useState(0);
   const [validCount, setValidCount] = useState(0);
   const [toastMsg, setToastMsg] = useState("");
-
-  const handleInsertSample = () => {
-    if (services.length > 0) {
-      const topSvcs = services.slice(0, 3);
-      const lines = topSvcs.map((s, idx) => {
-        return `${s.id} | https://instagram.com/profile_${idx + 1} | ${(idx + 1) * 1000}`;
-      });
-      setBulkText(lines.join("\n"));
-    }
-  };
 
   const handlePreview = () => {
     const lines = bulkText.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -122,29 +113,32 @@ export default function MassOrderPage() {
     setValidCount(validItems);
   };
 
-  const handlePlaceAll = () => {
+  const handlePlaceAll = async () => {
     if (validCount === 0) return;
     if (account.balance < totalCharge) {
       showToast(`❌ Insufficient balance — need ${fmtINR(totalCharge)}`);
       return;
     }
 
-    let successes = 0;
-    previews.forEach((p) => {
-      if (p.valid && p.service) {
-        const res = placeOrder(p.service, p.qty, p.link);
-        if (res.ok) {
+    try {
+      let successes = 0;
+      for (const p of previews) {
+        if (p.valid && p.service) {
+          await api.createOrder(p.service.id, p.qty, p.link);
           successes++;
         }
       }
-    });
 
-    refresh();
-    showToast(`✅ Successfully processed ${successes} bulk orders!`);
-    setBulkText("");
-    setPreviews([]);
-    setTotalCharge(0);
-    setValidCount(0);
+      await sync();
+      showToast(`✅ Successfully processed ${successes} bulk orders!`);
+      setBulkText("");
+      setPreviews([]);
+      setTotalCharge(0);
+      setValidCount(0);
+    } catch (err) {
+      await sync();
+      showToast(err instanceof Error ? err.message : "Bulk order failed.");
+    }
   };
 
   const showToast = (msg: string) => {
@@ -173,15 +167,15 @@ export default function MassOrderPage() {
           <div className="bg-white/[0.01] border border-white/5 rounded-xl p-4 text-[12px] font-mono text-slate-400 space-y-1">
             <div className="text-white font-bold mb-1.5 uppercase font-sans text-[10px] tracking-wider">Line Format Syntax:</div>
             <div><b>service_id | target_link | quantity</b></div>
-            <div>KV3135 | https://instagram.com/p/myprofile | 1000</div>
-            <div>KV1644 | https://instagram.com/reel/abc123 | 5000</div>
+            <div>KV3135 | https://your-public-link.example/post | 1000</div>
+            <div>KV1644 | https://your-public-link.example/reel | 5000</div>
           </div>
 
           <div className="flex flex-col">
             <textarea
               value={bulkText}
               onChange={(e) => setBulkText(e.target.value)}
-              placeholder="KV3135 | https://instagram.com/p/myprofile | 1000&#10;KV1644 | https://instagram.com/reel/abc123 | 5000"
+              placeholder="KV3135 | https://your-public-link.example/post | 1000&#10;KV1644 | https://your-public-link.example/reel | 5000"
               className="w-full h-44 rounded-xl border border-white/5 bg-white/[0.01] p-4 text-xs font-mono text-white placeholder-slate-600 outline-none focus:border-blue-500 focus:bg-white/[0.03]"
             />
           </div>
@@ -193,13 +187,6 @@ export default function MassOrderPage() {
             >
               <Clipboard size={14} />
               <span>Preview Orders</span>
-            </button>
-            <button
-              onClick={handleInsertSample}
-              className="btn btn-ghost !px-4 !py-2.5 !text-xs flex items-center gap-1.5"
-            >
-              <HelpCircle size={14} />
-              <span>Insert Samples</span>
             </button>
           </div>
         </div>
@@ -249,7 +236,7 @@ export default function MassOrderPage() {
           </div>
 
           <button
-            onClick={handlePlaceAll}
+            onClick={() => void handlePlaceAll()}
             disabled={validCount === 0}
             className="btn btn-cta btn-block btn-lg flex items-center justify-center gap-2"
           >

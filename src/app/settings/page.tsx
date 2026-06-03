@@ -88,9 +88,9 @@ export default function SettingsPage() {
   };
 
   const handleResetAccount = () => {
-    if (window.confirm("Are you sure you want to reset your mock account? This will clear all balance logs, ticket threads, and campaign orders.")) {
+    if (window.confirm("Clear the local browser cache for this device? Your live account, wallet, and orders stay on the server.")) {
       localStorage.removeItem("kriyava_account_v1");
-      showToast("🧹 Account data wiped! Reloading...");
+      showToast("Local cache cleared. Reloading...");
       setTimeout(() => {
         window.location.reload();
       }, 1000);
@@ -291,13 +291,13 @@ export default function SettingsPage() {
               <AlertTriangle size={16} /> Danger zone
             </h3>
             <p className="text-xs leading-relaxed text-slate-400">
-              Reset clears your simulated workspace memory cache (balance log, support tickets, campaign logs). This action is irreversible.
+              Clear this device&apos;s cached dashboard copy. Your live account, wallet, and order records remain stored on the server.
             </p>
             <button
               onClick={handleResetAccount}
               className="px-4 py-2 text-xs font-bold rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white transition-colors"
             >
-              Reset simulated demo account
+              Clear local cache
             </button>
           </div>
         </div>

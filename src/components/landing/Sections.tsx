@@ -76,7 +76,7 @@ export function WhyUs() {
     { icon: Zap, tint: "icontint-blue", t: "Lightning-fast delivery", d: "Orders start in seconds. Drip-feed and instant modes keep growth looking natural while it scales." },
     { icon: ShieldCheck, tint: "icontint-green", t: "High-retention services", d: "Real-looking profiles with low drop and lifetime refill options — engagement that actually sticks." },
     { icon: Headphones, tint: "icontint-cyan", t: "24/7 human support", d: "Real people on live chat and WhatsApp, plus automatic order updates so you're never left guessing." },
-    { icon: Lock, tint: "icontint-violet", t: "Secure payments", d: "Razorpay-protected checkout, instant wallet top-ups and cashback on every deposit. Zero card data stored." },
+    { icon: Lock, tint: "icontint-violet", t: "Secure payments", d: "Razorpay-protected checkout and verified wallet top-ups. Zero card data stored." },
     { icon: IndianRupee, tint: "icontint-amber", t: "Genuinely affordable", d: "Wholesale provider pricing passed to you. Transparent rates per 1K — no hidden fees, ever." },
     { icon: Code2, tint: "icontint-rose", t: "Powerful API + failover", d: "One REST API, multiple providers behind it. If one source slows, Kriyava auto-routes to the next. No downtime." },
   ];
@@ -183,7 +183,7 @@ function platIcon(label: string) {
 export function HowItWorks() {
   const steps = [
     { n: "01", img: "step-1-account", t: "Create account", d: "Sign up free in under 30 seconds — no card required." },
-    { n: "02", img: "step-2-wallet", t: "Add funds", d: "Top up via Razorpay, UPI or cards. Get instant cashback." },
+    { n: "02", img: "step-2-wallet", t: "Add funds", d: "Top up via Razorpay, UPI or cards. Funds are credited after secure verification." },
     { n: "03", img: "step-3-service", t: "Select service", d: "Pick a platform, paste your link, set quantity — or let AI do it." },
     { n: "04", img: "step-4-growth", t: "Watch growth", d: "Track delivery live on your dashboard and on WhatsApp." },
   ];
@@ -274,7 +274,7 @@ const res = await fetch("https://api.kriyava.com/v2", {
 export function Pricing() {
   const plans = [
     { name: "Starter", desc: "For creators growing their own accounts.", price: "0", cyc: "/ forever", feat: false, cls: "btn-ghost", cta: "Create free account", benefits: ["Pay-as-you-go wallet", "All platforms & services", "Standard delivery speed", "Email & chat support"] },
-    { name: "Professional", desc: "For power users & serious creators.", price: "1,999", cyc: "/ month", feat: true, cls: "btn-primary", cta: "Start Professional", benefits: ["Everything in Starter", "Priority delivery & support", "Up to 5% deposit cashback", "Full REST API access"] },
+    { name: "Professional", desc: "For power users & serious creators.", price: "1,999", cyc: "/ month", feat: true, cls: "btn-primary", cta: "Start Professional", benefits: ["Everything in Starter", "Priority delivery & support", "Verified Razorpay wallet top-ups", "Full REST API access"] },
     { name: "Agency", desc: "White-label panel for resellers & teams.", price: "4,999", cyc: "/ month", feat: false, cls: "btn-cta", cta: "Launch your panel", benefits: ["Everything in Professional", "White-label child panel", "Custom domain & branding", "Agency CRM & lowest rates"] },
   ];
   return (
@@ -321,10 +321,10 @@ export function Faq() {
     ["How fast will my order start?", "Most services start within seconds to a few minutes. Each service card shows its exact average start time and daily speed before you order."],
     ["What is provider failover?", "Kriyava is connected to multiple vetted providers (LuvSMM main, EasySMM backup). If one source is slow or out of stock, we automatically route your order to the next healthy provider."],
     ["Do you offer refills if followers drop?", "Many services include 30-day, 365-day or lifetime refill. The refill window is clearly labelled on every service, and refills can be requested in one click from your dashboard."],
-    ["Which payment methods do you accept?", "UPI, credit/debit cards, net banking and wallets via Razorpay — fully secure. Funds are added to your Kriyava wallet instantly, often with cashback."],
+    ["Which payment methods do you accept?", "UPI, credit/debit cards, net banking and wallets via Razorpay — fully secure. Funds are added to your Kriyava wallet after payment verification."],
     ["Can I resell with my own brand?", "Absolutely. The Agency plan gives you a white-label child panel with your own domain, logo, branding and pricing — powered by our API and automated order routing."],
     ["Does the AI assistant really place orders?", "Yes. Kriyava AI is agentic — tell it what you want and it finds the best service, checks your balance, and places the order for you. Try the chat button in the corner."],
-    ["What's the minimum deposit?", "You can start with as little as ₹50. There are no monthly minimums on the Starter plan — pay only for the orders you place."],
+    ["What's the minimum deposit?", "You can start with as little as ₹10. There are no monthly minimums on the Starter plan — pay only for the orders you place."],
   ];
   return (
     <section id="faq" className="section-pad">
@@ -385,7 +385,7 @@ export function FinalCta() {
                   </Link>
                 </div>
                 <p className="mt-4.5 text-[12px] text-white/70 font-semibold">
-                  No credit card required · Start from ₹50 · Cancel anytime
+                  No credit card required · Start from ₹10 · Cancel anytime
                 </p>
               </div>
 
@@ -421,4 +421,3 @@ export function FinalCta() {
     </section>
   );
 }
-

@@ -1,16 +1,16 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, RotateCcw, XCircle, AlertCircle, CheckCircle2, ShoppingBag } from "lucide-react";
+import { Search, CheckCircle2, ShoppingBag } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
-import { fmtINR, saveAccount } from "@/lib/account";
+import { fmtINR } from "@/lib/account";
+import { api } from "@/lib/api";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
-import type { Order } from "@/lib/types";
 
 const TABS = ["All", "Processing", "In progress", "Partial", "Completed", "Canceled"];
 
 export default function OrdersPage() {
-  const { account, refresh } = useAccount();
+  const { account, sync } = useAccount();
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [toastMsg, setToastMsg] = useState("");
@@ -33,20 +33,22 @@ export default function OrdersPage() {
     return `${Math.floor(hrs / 24)}d ago`;
   };
 
-  const handleRefill = (id: string) => {
-    showToast(`♻️ Refill requested successfully for order ${id}!`);
+  const handleRefill = async (id: string) => {
+    try {
+      await api.refillOrder(id);
+      showToast(`Refill requested successfully for order ${id}.`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Refill request failed.");
+    }
   };
 
-  const handleCancel = (id: string) => {
-    const a = { ...account };
-    const order = a.orders.find((o) => o.id === id);
-    if (order) {
-      order.status = "Canceled";
-      a.balance = +((a.balance || 0) + order.charge).toFixed(2);
-      a.spent = +((a.spent || 0) - order.charge).toFixed(2);
-      saveAccount(a);
-      refresh();
-      showToast(`✕ Order ${id} canceled. Wallet refunded: ${fmtINR(order.charge)}`);
+  const handleCancel = async (id: string) => {
+    try {
+      const res = await api.cancelOrder(id);
+      await sync();
+      showToast(`Order ${id} canceled. Wallet refunded: ${fmtINR(res.refunded)}`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Cancel request failed.");
     }
   };
 
@@ -217,7 +219,7 @@ export default function OrdersPage() {
                         <div className="flex items-center justify-center gap-1.5">
                           {isRefillable && (
                             <button
-                              onClick={() => handleRefill(o.id)}
+                              onClick={() => void handleRefill(o.id)}
                               className="px-2.5 py-1 rounded border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 text-[10.5px] font-bold tracking-wide transition-all"
                             >
                               ♻️ Refill
@@ -225,7 +227,7 @@ export default function OrdersPage() {
                           )}
                           {isCancelable && (
                             <button
-                              onClick={() => handleCancel(o.id)}
+                              onClick={() => void handleCancel(o.id)}
                               className="px-2.5 py-1 rounded border border-rose-500/20 bg-rose-500/5 text-rose-400 hover:bg-rose-500/10 text-[10.5px] font-bold tracking-wide transition-all"
                             >
                               ✕ Cancel

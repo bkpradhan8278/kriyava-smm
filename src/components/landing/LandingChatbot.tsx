@@ -42,7 +42,7 @@ const FAQ_DATA: { keywords: string[]; answer: string }[] = [
   {
     keywords: ["payment", "pay", "upi", "card", "razorpay", "method", "deposit", "fund"],
     answer:
-      "We accept UPI, credit/debit cards, net banking, and wallets — all processed securely through Razorpay. Funds appear in your Kriyava wallet instantly, and we often run cashback promotions on deposits. You can start with as little as ₹50!",
+      "We accept UPI, credit/debit cards, net banking, and wallets — all processed securely through Razorpay. Funds appear in your Kriyava wallet after payment verification. You can start with as little as ₹10!",
   },
   {
     keywords: ["api", "resell", "white label", "child panel", "agency"],

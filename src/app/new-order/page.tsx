@@ -1,15 +1,16 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Sparkles, Shield, AlertTriangle, Zap, CheckCircle2, Heart, Award } from "lucide-react";
+import { Shield, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
 import { useMarket } from "@/lib/useServices";
-import { placeOrder, fmtINR, saveAccount } from "@/lib/account";
+import { fmtINR, saveAccount } from "@/lib/account";
+import { api } from "@/lib/api";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import type { MarketService } from "@/lib/types";
 
 export default function NewOrderPage() {
-  const { account, refresh } = useAccount();
+  const { account, refresh, sync } = useAccount();
   const { services, loading } = useMarket();
 
   // Platforms derived from service catalog
@@ -20,9 +21,6 @@ export default function NewOrderPage() {
   const [qty, setQty] = useState(1000);
   const [charge, setCharge] = useState(0);
   
-  // Routing simulation
-  const [failoverMode, setFailoverMode] = useState<"auto" | "quality" | "cost" | "manual">("auto");
-  const [selectedProvider, setSelectedProvider] = useState("auto");
   const [routeLogs, setRouteLogs] = useState<string[]>([]);
 
   const [toastMsg, setToastMsg] = useState("");
@@ -60,7 +58,7 @@ export default function NewOrderPage() {
     }
   }, [activeService, qty]);
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!activeService) return;
     if (!link.trim()) {
       showToast("❌ Paste your target link first!");
@@ -75,47 +73,14 @@ export default function NewOrderPage() {
       return;
     }
 
-    // Simulate SMM provider routing path
-    const logs: string[] = [];
-    let providerUsed = activeService.provider || "LuvSMM";
-    
-    if (failoverMode === "auto") {
-      logs.push("Failover engine initiated: Scanning active provider gateways...");
-      const luvPing = 110 + Math.floor(Math.random() * 80);
-      const easyPing = 140 + Math.floor(Math.random() * 60);
-      
-      logs.push(`LuvSMM ping: ${luvPing}ms | EasySMM ping: ${easyPing}ms`);
-      
-      // Simulate random backup failover reroute
-      if (Math.random() > 0.7) {
-        logs.push("⚠️ Main channel gateway high load detected. Automatically failover to backup gateway...");
-        providerUsed = "EasySMM";
-        logs.push(`Success: Re-routed order to EasySMM endpoint (Ping: ${easyPing}ms).`);
-      } else {
-        logs.push(`Primary route healthy: Routed order to ${providerUsed} (Ping: ${luvPing}ms).`);
-      }
-    } else if (failoverMode === "quality") {
-      logs.push("Optimizer Mode: Quality-First routing.");
-      if (activeService.quality >= 4) {
-        logs.push(`Premium quality service tag: routing directly to high-capacity ${providerUsed} server.`);
-      } else {
-        logs.push(`Standard service tag: routed to LuvSMM (Ping: 110ms).`);
-      }
-    } else {
-      logs.push(`Manual routing: Routing forced to selected provider ${selectedProvider || providerUsed}`);
-      providerUsed = selectedProvider === "auto" ? providerUsed : selectedProvider;
-    }
-
-    setRouteLogs(logs);
-
-    // Place simulated order
-    const mockService = { ...activeService, provider: providerUsed };
-    const res = placeOrder(mockService, qty, link);
-
-    if (res.ok) {
-      refresh();
-      showToast(`✅ Order ${res.order.id} placed successfully!`);
+    try {
+      const order = await api.createOrder(activeService.id, qty, link);
+      setRouteLogs([`Order accepted by ${order.provider || "provider"} and saved to your account.`]);
+      await sync();
+      showToast(`✅ Order ${order.id} placed successfully!`);
       setLink("");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Order failed.");
     }
   };
 
@@ -196,51 +161,17 @@ export default function NewOrderPage() {
             </select>
           </div>
 
-          {/* Failover and Router settings */}
+          {/* Provider route status */}
           <div className="rounded-xl border border-white/5 bg-white/[0.01] p-4 text-xs font-bold text-slate-400">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[10.5px] font-extrabold uppercase tracking-wide text-white">AI Provider Router Failover Mode</span>
+              <span className="text-[10.5px] font-extrabold uppercase tracking-wide text-white">Provider Route</span>
               <span className="text-[9.5px] font-black text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded">
                 <Shield size={10} /> Active
               </span>
             </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-              {[
-                { id: "auto", label: "Auto Failover" },
-                { id: "quality", label: "Quality First" },
-                { id: "cost", label: "Lowest Cost" },
-                { id: "manual", label: "Manual Override" },
-              ].map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => setFailoverMode(m.id as any)}
-                  className={`py-2 px-1 text-[10.5px] font-bold rounded-lg border text-center transition-all ${
-                    failoverMode === m.id
-                      ? "border-blue-500 bg-blue-500/10 text-white"
-                      : "border-white/5 bg-white/[0.01] hover:text-white"
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-
-            {failoverMode === "manual" && (
-              <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/5">
-                <span>Select Target Endpoint:</span>
-                <select
-                  value={selectedProvider}
-                  onChange={(e) => setSelectedProvider(e.target.value)}
-                  className="rounded-lg border border-white/10 bg-[#090D16] p-1 text-[10.5px] text-white outline-none"
-                >
-                  <option value="auto">Auto Selection</option>
-                  <option value="LuvSMM">LuvSMM Gateway</option>
-                  <option value="EasySMM">EasySMM Gateway</option>
-                  <option value="MetaPanel">MetaPanel Gateway</option>
-                </select>
-              </div>
-            )}
+            <p className="text-[11px] leading-relaxed">
+              Orders are saved to your account and wallet deduction is handled by the backend. Provider fulfillment integration is tracked server-side.
+            </p>
 
             {routeLogs.length > 0 && (
               <div className="mt-3 bg-black/40 rounded-lg p-2.5 font-mono text-[10px] text-slate-400 space-y-1">
@@ -373,7 +304,7 @@ export default function NewOrderPage() {
             </div>
 
             <button
-              onClick={handlePlaceOrder}
+              onClick={() => void handlePlaceOrder()}
               disabled={loading || !activeService}
               className="btn btn-cta btn-block btn-lg"
             >

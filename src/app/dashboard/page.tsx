@@ -4,20 +4,16 @@ import Link from "next/link";
 import {
   LayoutDashboard,
   CheckCircle2,
-  AlertCircle,
   Clock,
   Wallet,
-  TrendingUp,
-  ArrowRight,
   Zap,
   Activity,
-  Award,
 } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
 import { useMarket } from "@/lib/useServices";
-import { fmtINR, placeOrder, addFunds } from "@/lib/account";
+import { fmtINR } from "@/lib/account";
+import { api } from "@/lib/api";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
-import type { MarketService, Order } from "@/lib/types";
 
 // Static categories configuration
 const POPULAR_CATEGORIES = [
@@ -29,21 +25,10 @@ const POPULAR_CATEGORIES = [
   { platform: "Website", icon: "🌐", color: "from-amber-500 to-orange-500" },
 ];
 
-const GLOBAL_MOCK_NAMES = ["@rahul.creates", "@priya_styles", "a reseller", "@suraj.vlogs", "an agency", "@fit.with.anu", "@techbyraj", "@food.diaries"];
-const GLOBAL_MOCK_ACTS = [
-  { text: "ordered 5,000 Instagram Followers", tint: "rose", platform: "Instagram" },
-  { text: "ordered 10,000 Reel Views", tint: "violet", platform: "Instagram" },
-  { text: "topped up wallet ₹2,000", tint: "green", platform: "Deposit" },
-  { text: "ordered 1,000 Telegram Members", tint: "cyan", platform: "Telegram" },
-  { text: "ordered 25,000 YouTube Views", tint: "amber", platform: "YouTube" },
-  { text: "ordered 3,000 Instagram Likes", tint: "blue", platform: "Instagram" },
-];
-
 export default function DashboardPage() {
-  const { account, refresh } = useAccount();
+  const { account, sync } = useAccount();
   const { services, loading: marketLoading } = useMarket();
   const [chartDays, setChartDays] = useState<14 | 30 | 90>(14);
-  const [liveFeed, setLiveFeed] = useState<{ id: number; text: string; time: string; tint: string }[]>([]);
   const [toastMsg, setToastMsg] = useState("");
 
   // Quick Order State
@@ -51,57 +36,6 @@ export default function DashboardPage() {
   const [qoLink, setQoLink] = useState("");
   const [qoQty, setQoQty] = useState(1000);
   const [qoCharge, setQoCharge] = useState(0);
-
-  // Initialize live feed & dropdowns
-  useEffect(() => {
-    // Generate initial live events
-    const initialEvents = Array.from({ length: 5 }).map((_, i) => {
-      const act = GLOBAL_MOCK_ACTS[Math.floor(Math.random() * GLOBAL_MOCK_ACTS.length)];
-      const name = GLOBAL_MOCK_NAMES[Math.floor(Math.random() * GLOBAL_MOCK_NAMES.length)];
-      return {
-        id: Date.now() - i * 10000,
-        text: `**${name}** ${act.text}`,
-        time: `${(i + 1) * 8}s ago`,
-        tint: act.tint,
-      };
-    });
-    setLiveFeed(initialEvents);
-
-    // Live order polling loop
-    const interval = setInterval(() => {
-      const act = GLOBAL_MOCK_ACTS[Math.floor(Math.random() * GLOBAL_MOCK_ACTS.length)];
-      const name = GLOBAL_MOCK_NAMES[Math.floor(Math.random() * GLOBAL_MOCK_NAMES.length)];
-      setLiveFeed((prev) => [
-        {
-          id: Date.now(),
-          text: `**${name}** ${act.text}`,
-          time: "just now",
-          tint: act.tint,
-        },
-        ...prev.slice(0, 6),
-      ]);
-    }, 6000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Update live feed time counters
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setLiveFeed((prev) =>
-        prev.map((item, idx) => {
-          if (item.time === "just now") return { ...item, time: "6s ago" };
-          const matches = item.time.match(/(\d+)s/);
-          if (matches) {
-            const nextSecs = parseInt(matches[1], 10) + 2;
-            return { ...item, time: `${nextSecs}s ago` };
-          }
-          return item;
-        })
-      );
-    }, 2000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Sync Quick Order list
   const quickPicks = services
@@ -124,9 +58,13 @@ export default function DashboardPage() {
     }
   }, [qoServiceId, qoQty, services]);
 
-  const handleQuickOrder = () => {
+  const handleQuickOrder = async () => {
     const svc = services.find((s) => s.id === qoServiceId);
     if (!svc) return;
+    if (!qoLink.trim()) {
+      showToast("Paste your target link first.");
+      return;
+    }
 
     if (account.balance < qoCharge) {
       showToast("❌ Insufficient balance — add funds!");
@@ -134,11 +72,13 @@ export default function DashboardPage() {
     }
 
     const qty = Math.max(svc.min || 10, qoQty);
-    const res = placeOrder(svc, qty, qoLink || "https://instagram.com/myprofile");
-    if (res.ok) {
-      refresh();
+    try {
+      await api.createOrder(svc.id, qty, qoLink);
+      await sync();
       showToast(`✅ Order placed: ${fmtINR(qoCharge)}`);
       setQoLink("");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Order failed.");
     }
   };
 
@@ -159,11 +99,6 @@ export default function DashboardPage() {
         else if (title.includes("tiktok")) counts.TikTok++;
         else counts.Other++;
       });
-    } else {
-      // Mock metrics for initial display
-      counts.Instagram = 60;
-      counts.Telegram = 20;
-      counts.YouTube = 20;
     }
     return counts;
   };
@@ -199,17 +134,21 @@ export default function DashboardPage() {
 
   const donutSegments = getDonutSegments();
 
-  // Create mock charts data path
+  // Create chart paths from real account orders.
   const getSVGChartPaths = () => {
     const dataPoints = chartDays === 14 ? 14 : chartDays === 30 ? 20 : 25;
-    const spendPoints: number[] = [];
-    const orderPoints: number[] = [];
+    const spendPoints = Array.from({ length: dataPoints }, () => 0);
+    const orderPoints = Array.from({ length: dataPoints }, () => 0);
+    const dayMs = 24 * 60 * 60 * 1000;
+    const start = Date.now() - (dataPoints - 1) * dayMs;
 
-    // Seed repeatable mock trends
-    for (let i = 0; i < dataPoints; i++) {
-      spendPoints.push(40 + Math.round(Math.abs(Math.sin(i * 0.9) * 60) + i * 2 + (i % 3) * 10));
-      orderPoints.push(10 + Math.round(Math.abs(Math.cos(i * 0.7) * 20) + i * 0.8 + (i % 2) * 5));
-    }
+    account.orders.forEach((order) => {
+      const idx = Math.floor((order.at - start) / dayMs);
+      if (idx >= 0 && idx < dataPoints && order.status !== "Canceled") {
+        spendPoints[idx] += order.charge;
+        orderPoints[idx] += 1;
+      }
+    });
 
     const W = 600;
     const H = 180;
@@ -267,15 +206,15 @@ export default function DashboardPage() {
             value: account.orders.length,
             icon: LayoutDashboard,
             color: "text-blue-400 bg-blue-500/10",
-            pct: "▲ 18.2%",
-            pctSub: "vs last week",
+            pct: "Live",
+            pctSub: "from your account",
           },
           {
             label: "Completed",
             value: completedCount,
             icon: CheckCircle2,
             color: "text-emerald-400 bg-emerald-500/10",
-            pct: "▲ 24.6%",
+            pct: String(completedCount),
             pctSub: "delivered",
           },
           {
@@ -283,7 +222,7 @@ export default function DashboardPage() {
             value: pendingCount,
             icon: Clock,
             color: "text-amber-400 bg-amber-500/10",
-            pct: "▲ live",
+            pct: String(pendingCount),
             pctSub: "processing",
           },
           {
@@ -291,8 +230,8 @@ export default function DashboardPage() {
             value: fmtINR(account.balance),
             icon: Wallet,
             color: "text-purple-400 bg-purple-500/10",
-            pct: "▲ 5% cashback",
-            pctSub: "on top-ups",
+            pct: "Verified",
+            pctSub: "Razorpay top-ups",
           },
         ].map((stat, i) => (
           <div
@@ -475,36 +414,46 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Live Activity Feed */}
+        {/* Account Activity Feed */}
         <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-5 backdrop-blur-md text-left flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Live Activity</h3>
-            <span className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-              </span>
-              Real-time
-            </span>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Account Activity</h3>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Your data</span>
           </div>
 
           <div className="feed overflow-y-auto space-y-3 pr-1 max-h-[220px]">
-            {liveFeed.map((evt) => (
-              <div key={evt.id} className="flex items-center gap-3 py-2 border-b border-white/5">
-                <span className={`grid h-8 w-8 place-items-center rounded-lg bg-white/5 text-white shrink-0`}>
-                  <Activity size={14} className="text-blue-400" />
-                </span>
-                <div className="flex-1 text-[12.5px] text-slate-300">
-                  {/* Parse bold tags */}
-                  <span
-                    dangerouslySetInnerHTML={{
-                      __html: evt.text.replace(/\*\*(.*?)\*\*/g, '<b class="text-white font-bold">$1</b>'),
-                    }}
-                  />
-                </div>
-                <div className="text-[10px] text-slate-500 font-bold shrink-0">{evt.time}</div>
+            {[...(account.txns || []), ...account.orders]
+              .sort((a, b) => b.at - a.at)
+              .slice(0, 8)
+              .map((evt) => {
+                const isTxn = "type" in evt;
+                return (
+                  <div key={`${isTxn ? "txn" : "ord"}-${evt.id}`} className="flex items-center gap-3 py-2 border-b border-white/5">
+                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/5 text-white shrink-0">
+                      <Activity size={14} className={isTxn ? "text-emerald-400" : "text-blue-400"} />
+                    </span>
+                    <div className="flex-1 text-[12.5px] text-slate-300">
+                      {isTxn ? (
+                        <span>
+                          Wallet {evt.type.toLowerCase()} via {evt.method}: <b className="text-white">{fmtINR(evt.amount)}</b>
+                        </span>
+                      ) : (
+                        <span>
+                          Order <b className="text-white">{evt.id}</b> placed: {evt.service}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-bold shrink-0">
+                      {new Date(evt.at).toLocaleDateString()}
+                    </div>
+                  </div>
+                );
+              })}
+            {(!account.txns || account.txns.length === 0) && account.orders.length === 0 && (
+              <div className="py-8 text-center text-slate-500 text-xs font-semibold">
+                No account activity yet.
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -566,7 +515,7 @@ export default function DashboardPage() {
             </div>
 
             <button
-              onClick={handleQuickOrder}
+              onClick={() => void handleQuickOrder()}
               disabled={marketLoading || !qoServiceId}
               className="btn btn-cta btn-block !py-3 !text-sm flex items-center justify-center gap-2"
             >
@@ -614,20 +563,19 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Provider health monitors */}
+        {/* Production status */}
         <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-5 backdrop-blur-md text-left flex flex-col">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Provider Health</h3>
-            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">LIVE STATUS</span>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Production Status</h3>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Configured</span>
           </div>
 
           <div className="space-y-4 my-auto">
             {[
-              { name: "LuvSMM", role: "Primary Router", status: "Operational", color: "bg-emerald-400", time: "110ms" },
-              { name: "EasySMM", role: "Backup Failover", status: "Operational", color: "bg-emerald-400", time: "140ms" },
-              { name: "MetaPanel", role: "Alternative Router", status: "Degraded Performance", color: "bg-amber-400", time: "850ms" },
-              { name: "Razorpay Gateway", role: "UPI Deposits", status: "Operational", color: "bg-emerald-400", time: "95ms" },
-              { name: "Reseller API Server", role: "JSON Gateway", status: "Operational", color: "bg-emerald-400", time: "40ms" },
+              { name: "Razorpay Checkout", role: "Verified wallet top-ups", status: "Enabled", color: "bg-emerald-400" },
+              { name: "Account API", role: "Auth, wallet, orders", status: "Live", color: "bg-emerald-400" },
+              { name: "Service Catalog", role: "Customer-facing services", status: `${services.length} services`, color: "bg-emerald-400" },
+              { name: "Provider Fulfillment", role: "Server-side integration", status: "Pending", color: "bg-amber-400" },
             ].map((p, idx) => (
               <div key={idx} className="flex items-center justify-between text-xs font-bold border-b border-white/5 pb-3 last:border-0 last:pb-0">
                 <div className="flex items-center gap-2.5">
@@ -642,11 +590,10 @@ export default function DashboardPage() {
                 <div className="text-right">
                   <div className="flex items-center gap-1.5 justify-end">
                     <span className={`h-1.5 w-1.5 rounded-full ${p.color}`} />
-                    <span className={p.status === "Operational" ? "text-emerald-400" : "text-amber-400"}>
+                    <span className={p.color === "bg-emerald-400" ? "text-emerald-400" : "text-amber-400"}>
                       {p.status}
                     </span>
                   </div>
-                  <div className="text-[9.5px] text-slate-500 mt-0.5 font-bold">ping {p.time}</div>
                 </div>
               </div>
             ))}

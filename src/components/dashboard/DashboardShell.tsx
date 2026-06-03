@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
 import { fmtINR } from "@/lib/account";
-import { KriyavaAiAgent } from "../landing/KriyavaAiAgent";
+import { clearToken } from "@/lib/api";
 
 const MENU_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -54,8 +54,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   };
 
   const handleLogout = () => {
-    // Basic navigation back to home/login
-    router.push("/");
+    clearToken();
+    router.push("/login");
   };
 
   return (
@@ -204,13 +204,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     <span className="text-[10px] text-blue-400 font-bold cursor-pointer" onClick={() => setNotifsOpen(false)}>Close</span>
                   </div>
                   <div className="space-y-2.5">
-                    <div className="text-xs border-b border-white/5 pb-2">
-                      <div className="font-semibold text-white">💰 5% Top-Up Cashback Active!</div>
-                      <p className="text-[10.5px] text-slate-400 mt-0.5">Deposit ₹1,000+ to automatically claim your extra 5% wallet balance credit.</p>
-                    </div>
                     <div className="text-xs">
-                      <div className="font-semibold text-white">♻️ Refill Guarantee Processed</div>
-                      <p className="text-[10.5px] text-slate-400 mt-0.5">High-retention social campaigns can now be refilled directly from your orders catalog.</p>
+                      <div className="font-semibold text-white">Wallet payments enabled</div>
+                      <p className="text-[10.5px] text-slate-400 mt-0.5">Razorpay top-ups credit your wallet only after backend verification.</p>
                     </div>
                   </div>
                 </div>
@@ -236,8 +232,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* FLOATING AI CHATBOT AGENT */}
-      <KriyavaAiAgent />
     </div>
     </AuthGuard>
   );

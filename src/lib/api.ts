@@ -85,6 +85,14 @@ export interface ApiTxn {
   note?: string | null;
   at: string;
 }
+export interface ApiTicket {
+  id: string;
+  subject: string;
+  category: string;
+  message: string;
+  status: string;
+  at: string;
+}
 
 export const api = {
   base: API_BASE,
@@ -112,7 +120,7 @@ export const api = {
 
   balance: () => request<{ balance: number; spent: number }>("/wallet/balance"),
   addFunds: (amount: number) =>
-    request<{ added: number; cashback: number; balance: number }>("/wallet/add-funds", {
+    request<{ added: number; balance: number }>("/wallet/add-funds", {
       method: "POST",
       body: { amount },
     }),
@@ -125,9 +133,9 @@ export const api = {
   cancelOrder: (id: string) =>
     request<{ ok: boolean; refunded: number }>(`/orders/${id}/cancel`, { method: "POST" }),
 
-  tickets: () => request<unknown[]>("/tickets"),
+  tickets: () => request<ApiTicket[]>("/tickets"),
   createTicket: (subject: string, category: string, message: string) =>
-    request<unknown>("/tickets", { method: "POST", body: { subject, category, message } }),
+    request<{ id: string; status: string; at: string }>("/tickets", { method: "POST", body: { subject, category, message } }),
 
   // payments (Razorpay)
   paymentConfig: () =>

@@ -35,19 +35,6 @@ function LoginContent() {
     acc.email = u.email;
     acc.balance = u.balance;
     acc.spent = u.spent;
-    acc._seeded = true;
-    saveAccount(acc);
-  };
-
-  // Demo fallback if the API is unreachable — keeps the app usable offline.
-  const demoLogin = (nameVal?: string, emailVal?: string) => {
-    const acc = loadAccount();
-    acc.name = nameVal || name || acc.name || "Creator";
-    acc.email = emailVal || email || acc.email || "creator@kriyava.com";
-    if (acc.balance === 0 && !acc._seeded) {
-      acc.balance = 500;
-      acc._seeded = true;
-    }
     saveAccount(acc);
   };
 
@@ -105,9 +92,8 @@ function LoginContent() {
         setLoading(false);
         return;
       }
-      // Network/server issue → fall back to demo mode so the app still works.
-      demoLogin(mode === "up" ? name : undefined, email);
-      router.push("/dashboard");
+      setError("Could not reach the server. Please try again in a moment.");
+      setLoading(false);
     }
   };
 

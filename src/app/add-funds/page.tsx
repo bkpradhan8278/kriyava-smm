@@ -8,8 +8,8 @@ import { api, loadRazorpay, ApiError } from "@/lib/api";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
 export default function AddFundsPage() {
-  const { account, refresh } = useAccount();
-  const [amount, setAmount] = useState(1000);
+  const { account, sync } = useAccount();
+  const [amount, setAmount] = useState(10);
   const [method, setMethod] = useState<"razorpay" | "upi" | "bank">("razorpay");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [paying, setPaying] = useState(false);
@@ -17,8 +17,8 @@ export default function AddFundsPage() {
 
   const handleDepositSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isNaN(amount) || amount < 50) {
-      showToast("❌ Minimum deposit is ₹50.");
+    if (isNaN(amount) || amount < 10) {
+      showToast("❌ Minimum deposit is ₹10.");
       return;
     }
     setCheckoutOpen(true);
@@ -61,7 +61,7 @@ export default function AddFundsPage() {
                 method: "Razorpay",
               });
               saveAccount(a);
-              refresh();
+              await sync();
               setCheckoutOpen(false);
               showToast(`✅ Added ${fmtINR(res.added)} to your wallet!`);
               resolve();
@@ -117,7 +117,7 @@ export default function AddFundsPage() {
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 font-display text-lg font-black text-slate-500">₹</span>
                 <input
                   type="number"
-                  min={50}
+                  min={10}
                   value={amount}
                   onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value, 10) || 0))}
                   required
@@ -125,7 +125,7 @@ export default function AddFundsPage() {
                 />
               </div>
               <span className="text-[10px] text-slate-500 font-bold mt-1.5 block">
-                Minimum deposit: ₹50. Pay securely via UPI, cards or netbanking.
+                Minimum deposit: ₹10. Pay securely via UPI, cards or netbanking.
               </span>
             </div>
 
