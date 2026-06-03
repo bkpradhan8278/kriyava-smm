@@ -64,6 +64,7 @@ export interface ApiUser {
   balance: number;
   spent: number;
   apiKey: string;
+  referralCode?: string | null;
 }
 export interface ApiAiMessage {
   role: "user" | "model";
@@ -107,10 +108,10 @@ export const api = {
   base: API_BASE,
   health: () => request<{ status: string; services: number }>("/health", { auth: false }),
 
-  register: (email: string, name: string, password: string) =>
+  register: (email: string, name: string, password: string, referralCode?: string) =>
     request<{ token: string; user: ApiUser }>("/auth/register", {
       method: "POST",
-      body: { email, name, password },
+      body: { email, name, password, referralCode },
       auth: false,
     }),
   login: (email: string, password: string) =>
@@ -119,10 +120,10 @@ export const api = {
       body: { email, password },
       auth: false,
     }),
-  social: (email: string, name: string) =>
+  social: (email: string, name: string, referralCode?: string) =>
     request<{ token: string; user: ApiUser }>("/auth/social", {
       method: "POST",
-      body: { email, name },
+      body: { email, name, referralCode },
       auth: false,
     }),
   me: () => request<ApiUser>("/auth/me"),
@@ -169,6 +170,7 @@ export const api = {
     request<{ ok: boolean; added: number; newBalance: number }>("/admin/add-funds", {
       method: "POST", body: { email, amount, note },
     }),
+  adminReferrals: () => request<AdminReferralResponse>("/admin/referrals"),
 };
 
 export interface AdminOrderRow {
@@ -181,6 +183,12 @@ export interface AdminUserRow {
   balance: number; spent: number; role: string; joined: string;
 }
 export interface AdminDepositRow { amount: number; method: string; note?: string | null; time: string; }
+export interface AdminReferralResponse {
+  summary: { totalReferrers: number; totalReferred: number; totalPaidOut: number };
+  topReferrers: Array<{ name: string; email: string; referralCode: string | null; earned: number; referredCount: number }>;
+  recentActivity: Array<{ amount: number; note: string | null; time: string }>;
+}
+
 export interface AdminSummaryResponse {
   asOf: string; totalUsers: number;
   providerStatus: { live: boolean; services: number; providers: Record<string,number>; balances: Record<string,string> };

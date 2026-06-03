@@ -28,6 +28,7 @@ export function useAccount() {
         balance: me.balance,
         spent: me.spent,
         apiKey: me.apiKey,
+        referralCode: me.referralCode || cached.referralCode,
         orders: orders.map((o) => ({
           id: o.id,
           service: o.service,

@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { Play, Clipboard, CheckCircle2, AlertCircle } from "lucide-react";
+import { Play, Clipboard, CheckCircle2, AlertCircle, Search } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
 import { useMarket } from "@/lib/useServices";
 import { fmtINR } from "@/lib/account";
@@ -28,6 +28,11 @@ export default function MassOrderPage() {
   const [totalCharge, setTotalCharge] = useState(0);
   const [validCount, setValidCount] = useState(0);
   const [toastMsg, setToastMsg] = useState("");
+  const [svcSearch, setSvcSearch] = useState("");
+
+  const svcResults = svcSearch.trim().length > 1
+    ? services.filter((s) => `${s.name} ${s.platform} ${s.category}`.toLowerCase().includes(svcSearch.toLowerCase())).slice(0, 8)
+    : [];
 
   const handlePreview = () => {
     const lines = bulkText.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -167,8 +172,40 @@ export default function MassOrderPage() {
           <div className="bg-white/[0.01] border border-white/5 rounded-xl p-4 text-[12px] font-mono text-slate-400 space-y-1">
             <div className="text-white font-bold mb-1.5 uppercase font-sans text-[10px] tracking-wider">Line Format Syntax:</div>
             <div><b>service_id | target_link | quantity</b></div>
-            <div>KV3135 | https://your-public-link.example/post | 1000</div>
-            <div>KV1644 | https://your-public-link.example/reel | 5000</div>
+            <div className="text-[11px]">Example: <span className="text-blue-400">easy:641 | https://instagram.com/myprofile | 1000</span></div>
+            <div className="text-[11px]">Example: <span className="text-blue-400">luv:1147 | https://instagram.com/reel/abc | 500</span></div>
+          </div>
+
+          {/* Service ID lookup */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">Find Service ID</label>
+            <div className="relative">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input type="text" value={svcSearch} onChange={(e) => setSvcSearch(e.target.value)}
+                placeholder="Search by name, platform, category…"
+                className="w-full rounded-xl border border-white/5 bg-white/[0.02] px-4 py-2.5 pl-8 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500" />
+            </div>
+            {svcResults.length > 0 && (
+              <div className="rounded-xl border border-white/5 bg-[#090D16] overflow-hidden">
+                {svcResults.map((s) => (
+                  <button key={s.id} type="button"
+                    onClick={() => {
+                      setBulkText((t) => t + (t && !t.endsWith("\n") ? "\n" : "") + `${s.id} | https://link.here | ${s.min || 100}`);
+                      setSvcSearch("");
+                    }}
+                    className="w-full flex items-start justify-between gap-2 px-4 py-2.5 hover:bg-white/[0.03] border-b border-white/[0.04] last:border-0 text-left">
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-bold text-white truncate">{s.name}</div>
+                      <div className="text-[10px] text-slate-500">{s.platform} · {s.category.slice(0, 30)}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="font-mono text-[10px] text-blue-400 font-bold">{s.id}</div>
+                      <div className="text-[10px] text-emerald-400">₹{s.price.toFixed(2)}/1K</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col">

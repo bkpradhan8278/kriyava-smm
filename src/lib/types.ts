@@ -84,5 +84,6 @@ export interface Account {
   txns?: Txn[];
   tickets?: Ticket[];
   apiKey?: string;
+  referralCode?: string | null;
   prefs?: Record<string, any>;
 }

@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Shield, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Shield, AlertTriangle, CheckCircle2, ChevronDown, Star } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
 import { useMarket } from "@/lib/useServices";
 import { fmtINR, saveAccount } from "@/lib/account";
@@ -9,99 +9,87 @@ import { api } from "@/lib/api";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import type { MarketService } from "@/lib/types";
 
+const PLATFORM_ICONS: Record<string, string> = {
+  Instagram: "📸", YouTube: "🎥", TikTok: "🎵", Telegram: "✈️",
+  Facebook: "📘", Spotify: "🎧", X: "✖️", Website: "🌐", Other: "⚡",
+};
+
 export default function NewOrderPage() {
   const { account, refresh, sync } = useAccount();
   const { services, loading } = useMarket();
 
-  // Platforms derived from service catalog
-  const [platforms, setPlatforms] = useState<string[]>([]);
   const [selectedPlatform, setSelectedPlatform] = useState("Instagram");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [link, setLink] = useState("");
   const [qty, setQty] = useState(1000);
-  const [charge, setCharge] = useState(0);
-  
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [routeLogs, setRouteLogs] = useState<string[]>([]);
+  const [routeMsg, setRouteMsg] = useState("");
   const [toastMsg, setToastMsg] = useState("");
+  const [placing, setPlacing] = useState(false);
 
-  // Extract platforms
-  useEffect(() => {
-    if (services.length > 0) {
-      const unique = Array.from(new Set(services.map((s) => s.platform)));
-      setPlatforms(unique.sort());
-    }
+  // Derived data
+  const platforms = useMemo(() => {
+    const set = new Set(services.map((s) => s.platform));
+    return Array.from(set).sort();
   }, [services]);
 
-  // Category labels extracted from service names
-  const SERVICE_CATEGORIES = ["All", "Followers", "Likes", "Views", "Comments", "Reels", "Subscribers", "Members", "Story"];
-  function getCategory(name: string) {
-    const n = name.toLowerCase();
-    if (n.includes("follower")) return "Followers";
-    if (n.includes("like")) return "Likes";
-    if (n.includes("view") || n.includes("watch")) return "Views";
-    if (n.includes("comment")) return "Comments";
-    if (n.includes("reel")) return "Reels";
-    if (n.includes("subscriber") || n.includes("sub")) return "Subscribers";
-    if (n.includes("member")) return "Members";
-    if (n.includes("story") || n.includes("stories")) return "Story";
-    return "Other";
-  }
+  const platformServices = useMemo(
+    () => services.filter((s) => s.platform === selectedPlatform).sort((a, b) => a.price - b.price),
+    [services, selectedPlatform]
+  );
 
-  // Sync services based on platform + category
-  const filteredServices = services
-    .filter((s) => {
-      if (s.platform !== selectedPlatform) return false;
-      if (selectedCategory !== "All" && getCategory(s.name) !== selectedCategory) return false;
-      return true;
-    })
-    .sort((a, b) => a.price - b.price);
+  const categories = useMemo(() => {
+    const set = new Set(platformServices.map((s) => s.category));
+    return Array.from(set).sort();
+  }, [platformServices]);
 
+  const categoryServices = useMemo(
+    () => (selectedCategory ? platformServices.filter((s) => s.category === selectedCategory) : platformServices),
+    [platformServices, selectedCategory]
+  );
+
+  const activeService = useMemo(
+    () => services.find((s) => s.id === selectedServiceId),
+    [services, selectedServiceId]
+  );
+
+  const charge = useMemo(
+    () => (activeService ? +((activeService.price * qty) / 1000).toFixed(2) : 0),
+    [activeService, qty]
+  );
+
+  // Reset category and service when platform changes
   useEffect(() => {
-    if (filteredServices.length > 0) {
-      setSelectedServiceId(filteredServices[0].id);
-    } else {
-      setSelectedServiceId("");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlatform, selectedCategory, services]);
+    setSelectedCategory("");
+    setSelectedServiceId("");
+  }, [selectedPlatform]);
 
-  const activeService = services.find((s) => s.id === selectedServiceId);
-
-  // Sync pricing charge
+  // Auto-select first category when categories change
   useEffect(() => {
-    if (activeService) {
-      const total = +((activeService.price * qty) / 1000).toFixed(2);
-      setCharge(total);
-    } else {
-      setCharge(0);
-    }
-  }, [activeService, qty]);
+    if (categories.length > 0 && !selectedCategory) setSelectedCategory(categories[0]);
+  }, [categories, selectedCategory]);
+
+  // Auto-select first service when category changes
+  useEffect(() => {
+    if (categoryServices.length > 0) setSelectedServiceId(categoryServices[0].id);
+    else setSelectedServiceId("");
+  }, [selectedCategory]);
 
   const handlePlaceOrder = async () => {
-    if (!activeService) return;
-    if (!link.trim()) {
-      showToast("❌ Paste your target link first!");
-      return;
-    }
-    if (qty < (activeService.min || 10)) {
-      showToast(`❌ Minimum quantity is ${(activeService.min || 10).toLocaleString()}`);
-      return;
-    }
-    if (account.balance < charge) {
-      showToast(`❌ Insufficient balance — need ${fmtINR(charge)}`);
-      return;
-    }
-
+    if (!activeService || !link.trim()) { showToast("❌ Paste your target link first!"); return; }
+    const minQty = activeService.min || 10;
+    if (qty < minQty) { showToast(`❌ Minimum is ${minQty.toLocaleString()}`); return; }
+    if (account.balance < charge) { showToast(`❌ Insufficient balance — need ${fmtINR(charge)}`); return; }
+    setPlacing(true);
     try {
       const order = await api.createOrder(activeService.id, qty, link);
-      setRouteLogs([`Order accepted by ${order.provider || "provider"} and saved to your account.`]);
+      setRouteMsg(`✅ Routed via ${order.provider || "provider"} — Order ID: …${order.id.slice(-8)}`);
       await sync();
-      showToast(`✅ Order ${order.id} placed successfully!`);
+      showToast(`✅ Order placed! ${fmtINR(charge)} deducted.`);
       setLink("");
     } catch (err) {
       showToast(err instanceof Error ? err.message : "Order failed.");
-    }
+    } finally { setPlacing(false); }
   };
 
   const handleFavorite = () => {
@@ -110,275 +98,199 @@ export default function NewOrderPage() {
     a.favorites = a.favorites || [];
     if (!a.favorites.includes(activeService.id)) {
       a.favorites.push(activeService.id);
-      saveAccount(a);
-      refresh();
-      showToast("⭐ Added to favorites list");
-    } else {
-      showToast("⭐ Already in your favorites");
-    }
+      saveAccount(a); refresh();
+      showToast("⭐ Added to favorites");
+    } else showToast("Already in favorites");
   };
 
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(""), 3000);
-  };
+  const showToast = (msg: string) => { setToastMsg(msg); setTimeout(() => setToastMsg(""), 3000); };
 
   return (
     <DashboardShell>
       {/* LOW BALANCE BANNER */}
       {account.balance < 50 && (
-        <div className="mb-5 flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-3 text-xs font-bold text-amber-400">
-          <AlertTriangle size={15} className="shrink-0" />
-          <span>Wallet balance is low ({fmtINR(account.balance)}). <Link href="/add-funds" className="underline underline-offset-2 hover:text-amber-300">Add funds →</Link></span>
+        <div className="mb-5 flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-xs font-bold text-amber-400">
+          <AlertTriangle size={14} className="shrink-0" />
+          Wallet balance low ({fmtINR(account.balance)}). <Link href="/add-funds" className="underline ml-1">Add funds →</Link>
         </div>
       )}
 
-      {/* PAGE TITLE */}
       <div className="text-left mb-6">
         <h1 className="font-display text-2xl md:text-3xl font-black text-white">New Order</h1>
-        <p className="text-sm text-slate-400 mt-1">Pick a service, paste your link, and grow. Orders are auto-routed securely across providers.</p>
+        <p className="text-sm text-slate-400 mt-1">Pick a service, paste your link, and grow. Auto-routed across providers.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 items-start">
-        {/* ORDER FORM CARD */}
-        <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-6 backdrop-blur-md text-left space-y-6">
+        {/* ORDER FORM */}
+        <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-5 space-y-5">
           <div className="flex items-center justify-between border-b border-white/5 pb-4">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Place an order</h3>
-            <span className="text-[11px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2.5 py-1 rounded-md">
-              {filteredServices.length} Services Available
+            <h3 className="text-xs font-extrabold text-white uppercase tracking-wider">Place an Order</h3>
+            <span className="text-[10px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-md uppercase tracking-wider">
+              {categoryServices.length} services
             </span>
           </div>
 
-          {/* Platform chips — horizontal scroll on mobile */}
-          <div className="flex flex-col">
-            <label className="text-[10.5px] font-extrabold uppercase tracking-wide text-slate-400 mb-2">Select Platform</label>
-            <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 ">
+          {/* STEP 1: Platform */}
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-2">1 — Select Platform</label>
+            <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
               {platforms.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => { setSelectedPlatform(p); setSelectedCategory("All"); }}
-                  className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                    selectedPlatform === p
-                      ? "bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.25)]"
-                      : "bg-white/[0.02] border border-white/5 text-slate-400 hover:text-white"
-                  }`}
-                >
-                  {p}
+                <button key={p} onClick={() => setSelectedPlatform(p)}
+                  className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                    selectedPlatform === p ? "bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,.25)]" : "bg-white/[0.02] border border-white/5 text-slate-400 hover:text-white"
+                  }`}>
+                  <span>{PLATFORM_ICONS[p] || "⚡"}</span><span>{p}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Category filter dropdown */}
-          <div className="flex flex-col">
-            <label className="text-[10.5px] font-extrabold uppercase tracking-wide text-slate-400 mb-2">Category</label>
-            <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 ">
-              {SERVICE_CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                    selectedCategory === cat
-                      ? "bg-emerald-600 text-white"
-                      : "bg-white/[0.02] border border-white/5 text-slate-400 hover:text-white"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Service Selector */}
-          <div className="flex flex-col">
-            <label className="text-[10.5px] font-extrabold uppercase tracking-wide text-slate-400 mb-2">
-              Growth Service <span className="text-slate-600 normal-case font-medium">({filteredServices.length} available)</span>
-            </label>
-            <select
-              value={selectedServiceId}
-              onChange={(e) => setSelectedServiceId(e.target.value)}
-              className="w-full rounded-xl border border-white/5 bg-white/[0.01] px-4 py-3.5 text-xs text-white outline-none focus:border-blue-500 focus:bg-white/[0.03]"
-            >
-              {loading ? (
-                <option>Loading services...</option>
-              ) : filteredServices.length === 0 ? (
-                <option>No services in this category</option>
-              ) : (
-                filteredServices.map((s) => (
-                  <option key={s.id} value={s.id} className="bg-[#090D16] text-white">
-                    {s.name} — {fmtINR(s.price)}/1K
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
-
-          {/* Provider route status */}
-          <div className="rounded-xl border border-white/5 bg-white/[0.01] p-4 text-xs font-bold text-slate-400">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[10.5px] font-extrabold uppercase tracking-wide text-white">Provider Route</span>
-              <span className="text-[9.5px] font-black text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded">
-                <Shield size={10} /> Active
-              </span>
-            </div>
-            <p className="text-[11px] leading-relaxed">
-              Orders are saved to your account and wallet deduction is handled by the backend. Provider fulfillment integration is tracked server-side.
-            </p>
-
-            {routeLogs.length > 0 && (
-              <div className="mt-3 bg-black/40 rounded-lg p-2.5 font-mono text-[10px] text-slate-400 space-y-1">
-                {routeLogs.map((log, idx) => (
-                  <div key={idx} className="flex gap-1.5 items-start">
-                    <span className="text-blue-500">&gt;</span>
-                    <span className="text-left">{log}</span>
-                  </div>
+          {/* STEP 2: Category dropdown */}
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-2">2 — Category</label>
+            <div className="relative">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-blue-500 appearance-none cursor-pointer"
+              >
+                {categories.map((cat) => (
+                  <option key={cat} value={cat} className="bg-[#0D1321]">{cat}</option>
                 ))}
-              </div>
-            )}
+                {categories.length === 0 && <option>No categories — select a platform</option>}
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
           </div>
 
-          {/* Details Table */}
+          {/* STEP 3: Service dropdown */}
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-2">3 — Service ({categoryServices.length})</label>
+            <div className="relative">
+              <select
+                value={selectedServiceId}
+                onChange={(e) => setSelectedServiceId(e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs text-white outline-none focus:border-blue-500 appearance-none cursor-pointer"
+              >
+                {loading ? <option>Loading services…</option>
+                  : categoryServices.length === 0 ? <option>No services in this category</option>
+                  : categoryServices.map((s) => (
+                    <option key={s.id} value={s.id} className="bg-[#0D1321]">
+                      {s.name} — {fmtINR(s.price)}/1K
+                    </option>
+                  ))}
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Service details card */}
           {activeService && (
-            <div className="border-t border-white/5 pt-4 space-y-2.5 text-xs text-slate-300">
-              <div className="flex items-center justify-between py-1.5">
-                <span className="text-slate-400 font-bold">Category Niche</span>
-                <b className="font-bold text-white">{activeService.category}</b>
-              </div>
-              <div className="flex items-center justify-between py-1.5 border-t border-white/5">
-                <span className="text-slate-400 font-bold">Average Completion Speed</span>
-                <b className="font-bold text-emerald-400">{activeService.speed}</b>
-              </div>
-              <div className="flex items-center justify-between py-1.5 border-t border-white/5">
-                <span className="text-slate-400 font-bold">Refill Policy</span>
-                <b className="font-bold text-white">{activeService.refill}</b>
-              </div>
-              <div className="flex items-center justify-between py-1.5 border-t border-white/5">
-                <span className="text-slate-400 font-bold">Average Quality Assessment</span>
-                <span className="flex text-amber-400 font-black text-sm">
+            <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Service Details</span>
+                <span className="flex">
                   {Array.from({ length: 5 }).map((_, i) => (
-                    <span key={i} className="leading-none">
-                      {i < activeService.quality ? "★" : "☆"}
-                    </span>
+                    <Star key={i} size={11} className={i < activeService.quality ? "text-amber-400 fill-amber-400" : "text-slate-700"} />
                   ))}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-1.5 border-t border-white/5">
-                <span className="text-slate-400 font-bold">Minimum / Maximum Quantity</span>
-                <b className="font-bold text-white">
-                  {(activeService.min || 10).toLocaleString()} /{" "}
-                  {activeService.max ? activeService.max.toLocaleString() : "∞"}
-                </b>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {[
+                  { l: "Speed", v: activeService.speed },
+                  { l: "Refill", v: activeService.refill },
+                  { l: "Min Order", v: (activeService.min || 1).toLocaleString() },
+                  { l: "Max Order", v: activeService.max ? activeService.max.toLocaleString() : "∞" },
+                  { l: "Provider", v: activeService.provider },
+                  { l: "Rate per 1K", v: fmtINR(activeService.price) },
+                ].map((row) => (
+                  <div key={row.l} className="flex items-center justify-between py-1 border-b border-white/5">
+                    <span className="text-slate-500 font-bold">{row.l}</span>
+                    <span className="text-white font-bold text-right">{row.v}</span>
+                  </div>
+                ))}
               </div>
+              {/* Provider route status */}
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wide">Provider Route</span>
+                <span className="flex items-center gap-1 text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  <Shield size={9} /> Active
+                </span>
+              </div>
+              {routeMsg && <p className="text-[10px] font-mono text-blue-400 bg-blue-500/5 rounded-lg px-3 py-2">{routeMsg}</p>}
             </div>
           )}
 
-          {/* Inputs */}
-          <div className="space-y-4 pt-4 border-t border-white/5">
-            <div className="flex flex-col">
-              <label className="text-[10.5px] font-extrabold uppercase tracking-wide text-slate-400 mb-1.5">Target Link Link</label>
-              <input
-                type="text"
-                placeholder="https://instagram.com/yourprofile"
-                value={link}
-                onChange={(e) => setLink(e.target.value)}
-                className="w-full rounded-xl border border-white/5 bg-white/[0.01] px-4 py-3.5 text-sm text-white placeholder-slate-600 outline-none focus:border-blue-500 focus:bg-white/[0.03]"
-              />
-              <span className="text-[10px] text-slate-500 font-bold mt-1 text-left">
-                Public profile, post, or channel link. We never ask for password credentials.
-              </span>
-            </div>
-
-            <div className="flex flex-col">
-              <label className="text-[10.5px] font-extrabold uppercase tracking-wide text-slate-400 mb-1.5">
-                Quantity{" "}
-                {activeService && (
-                  <span className="text-slate-500 lowercase">
-                    (min {(activeService.min || 10).toLocaleString()} • max{" "}
-                    {activeService.max ? activeService.max.toLocaleString() : "∞"})
-                  </span>
-                )}
-              </label>
-              <input
-                type="number"
-                value={qty}
-                onChange={(e) => setQty(Math.max(1, parseInt(e.target.value, 10) || 0))}
-                className="w-full rounded-xl border border-white/5 bg-white/[0.01] px-4 py-3.5 text-sm text-white outline-none focus:border-blue-500 focus:bg-white/[0.03]"
-              />
-            </div>
-
-            <button
-              onClick={handleFavorite}
-              className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-amber-400 transition-colors"
-            >
-              <span>★</span> Add to favorites catalog
-            </button>
+          {/* Link */}
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-2">4 — Target Link / Username</label>
+            <input type="text" placeholder="https://instagram.com/yourprofile or username" value={link}
+              onChange={(e) => setLink(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3.5 text-sm text-white placeholder-slate-600 outline-none focus:border-blue-500" />
+            <p className="text-[10px] text-slate-600 mt-1">Public profile, post, or channel link. Never share passwords.</p>
           </div>
 
-          <div className="flex gap-2.5 rounded-xl border border-white/5 bg-white/[0.02] p-4 text-[11px] leading-relaxed text-slate-400 text-left">
-            <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
-            <p>
-              <b>Precaution</b>: Please do not place a second order on the exact same link until the first campaign has finished processing. Quality tags represent guidelines — we recommend testing a small units order before bulk spending.
-            </p>
+          {/* Quantity */}
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 block mb-2">
+              5 — Quantity
+              {activeService && <span className="text-slate-600 normal-case font-medium ml-1">(Min {(activeService.min||1).toLocaleString()} • Max {activeService.max ? activeService.max.toLocaleString() : "∞"})</span>}
+            </label>
+            <input type="number" value={qty} onChange={(e) => setQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              className="w-full rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3.5 text-sm text-white outline-none focus:border-blue-500" />
+          </div>
+
+          <button onClick={handleFavorite} className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-amber-400 transition-colors">
+            <Star size={12} /> Save to favorites
+          </button>
+
+          <div className="flex gap-2.5 rounded-xl border border-amber-500/10 bg-amber-500/5 p-3.5 text-[11px] text-amber-400/80">
+            <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+            Don't place a second order on the same link before the first completes. Test with small quantities first.
           </div>
         </div>
 
-        {/* ORDER SUMMARY PANEL */}
-        <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-6 backdrop-blur-md text-left sticky top-24 space-y-6">
-          <div className="border-b border-white/5 pb-4">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Order summary</h3>
+        {/* ORDER SUMMARY */}
+        <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-5 sticky top-6 space-y-5">
+          <h3 className="text-xs font-extrabold text-white uppercase tracking-wider border-b border-white/5 pb-4">Order Summary</h3>
+
+          <div className="space-y-3 text-xs">
+            {[
+              { l: "Service", v: activeService ? activeService.name.slice(0, 55) + (activeService.name.length > 55 ? "…" : "") : "—" },
+              { l: "Platform", v: selectedPlatform },
+              { l: "Category", v: selectedCategory || "—" },
+              { l: "Rate / 1K", v: activeService ? fmtINR(activeService.price) : "—" },
+              { l: "Quantity", v: qty.toLocaleString() },
+              { l: "Speed", v: activeService?.speed || "—" },
+            ].map((r) => (
+              <div key={r.l} className="flex items-start justify-between gap-3 border-b border-white/5 pb-2">
+                <span className="text-slate-400 font-bold shrink-0">{r.l}</span>
+                <span className="text-white font-bold text-right break-words max-w-[60%]">{r.v}</span>
+              </div>
+            ))}
           </div>
 
-          <div className="space-y-4 text-xs">
-            <div className="flex items-start justify-between py-1">
-              <span className="text-slate-400 font-bold shrink-0">Selected Service:</span>
-              <b className="font-bold text-white text-right ml-4 line-clamp-2">
-                {activeService ? activeService.name : "—"}
-              </b>
-            </div>
-            <div className="flex items-center justify-between py-1 border-t border-white/5">
-              <span className="text-slate-400 font-bold">Wholesale Rate / 1K:</span>
-              <b className="font-black text-white">
-                {activeService ? fmtINR(activeService.price) : "—"}
-              </b>
-            </div>
-            <div className="flex items-center justify-between py-1 border-t border-white/5">
-              <span className="text-slate-400 font-bold">Requested Quantity:</span>
-              <b className="font-bold text-white">{qty.toLocaleString()}</b>
-            </div>
-            <div className="flex items-center justify-between py-1 border-t border-white/5">
-              <span className="text-slate-400 font-bold">Delivery Speed:</span>
-              <b className="font-bold text-emerald-400">{activeService ? activeService.speed : "—"}</b>
-            </div>
-
-            <div className="p-4 border border-white/5 bg-white/[0.01] rounded-xl flex items-center justify-between text-sm font-bold mt-4">
-              <span className="text-slate-400">Total charge:</span>
-              <b className="text-xl text-blue-400 font-extrabold">{fmtINR(charge)}</b>
-            </div>
-
-            <button
-              onClick={() => void handlePlaceOrder()}
-              disabled={loading || !activeService}
-              className="btn btn-cta btn-block btn-lg"
-            >
-              Place Campaign Order
-            </button>
-
-            <div className="flex items-center justify-between border-t border-white/5 pt-4 text-xs font-bold text-slate-400">
-              <span>Your Wallet Balance:</span>
-              <b className="text-white">{fmtINR(account.balance)}</b>
-            </div>
-
-            <Link href="/add-funds" className="btn btn-ghost btn-block mt-2">
-              + Top-up funds
-            </Link>
+          <div className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-white/[0.02]">
+            <span className="text-slate-400 text-sm font-bold">Total Charge</span>
+            <span className="text-2xl font-black text-blue-400">{fmtINR(charge)}</span>
           </div>
+
+          <button onClick={() => void handlePlaceOrder()} disabled={loading || !activeService || placing}
+            className="btn btn-cta btn-block btn-lg disabled:opacity-50">
+            {placing ? "Placing…" : "Place Order"}
+          </button>
+
+          <div className="flex items-center justify-between border-t border-white/5 pt-4 text-xs font-bold text-slate-400">
+            <span>Wallet Balance</span>
+            <span className={`font-black ${account.balance < charge ? "text-rose-400" : "text-emerald-400"}`}>{fmtINR(account.balance)}</span>
+          </div>
+          <Link href="/add-funds" className="btn btn-ghost btn-block !text-xs">+ Top-up Wallet</Link>
         </div>
       </div>
 
-      {/* TOAST PANEL */}
       {toastMsg && (
-        <div className="fixed bottom-24 left-6 z-55 rounded-xl border border-white/10 bg-[#0D1321]/95 px-5 py-3 shadow-2xl backdrop-blur-md flex items-center gap-2.5 text-xs font-black border-l-4 border-l-emerald-500 animate-slideup">
-          <CheckCircle2 size={16} className="text-emerald-400" />
+        <div className="fixed bottom-24 left-4 right-4 sm:left-6 sm:right-auto sm:w-80 z-55 rounded-xl border border-white/10 bg-[#0D1321]/95 px-4 py-3 shadow-2xl flex items-center gap-2.5 text-xs font-black border-l-4 border-l-emerald-500">
+          <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
           <span>{toastMsg}</span>
         </div>
       )}

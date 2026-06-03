@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   BarChart2, Users, ShoppingBag, Wallet, TrendingUp, RefreshCw,
   AlertTriangle, XCircle, Zap, Database, Shield, PlusCircle, CheckCircle2,
-  Lightbulb, Star,
+  Lightbulb, Star, Gift,
 } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
-import { api, type AdminSummaryResponse, type AdminOrderRow, type AdminUserRow } from "@/lib/api";
+import { api, type AdminSummaryResponse, type AdminOrderRow, type AdminUserRow, type AdminReferralResponse } from "@/lib/api";
 import { fmtINR } from "@/lib/account";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
@@ -90,7 +90,7 @@ function RevenueChart({ orders }: { orders: AdminOrderRow[] }) {
   );
 }
 
-type Tab = "overview" | "orders" | "users" | "providers" | "deposits" | "roadmap";
+type Tab = "overview" | "orders" | "users" | "providers" | "deposits" | "referrals" | "roadmap";
 
 const ROADMAP = [
   { status: "live", label: "Multi-provider routing (EasySMM + LuvSMM + FineSMM)", desc: "Auto cheapest first, balance-aware failover" },
@@ -114,6 +114,7 @@ export default function AdminPage() {
   const { account } = useAccount();
   const router = useRouter();
   const [data, setData] = useState<AdminSummaryResponse | null>(null);
+  const [refData, setRefData] = useState<AdminReferralResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<Tab>("overview");
@@ -136,8 +137,11 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     setLoading(true); setError("");
-    try { setData(await api.adminSummary()); }
-    catch (e) { setError(e instanceof Error ? e.message : "Load failed"); }
+    try {
+      const [summary, referrals] = await Promise.all([api.adminSummary(), api.adminReferrals()]);
+      setData(summary);
+      setRefData(referrals);
+    } catch (e) { setError(e instanceof Error ? e.message : "Load failed"); }
     finally { setLoading(false); }
   };
 
@@ -180,6 +184,7 @@ export default function AdminPage() {
     { key: "users", label: "Users", icon: Users },
     { key: "providers", label: "Providers", icon: Database },
     { key: "deposits", label: "Deposits", icon: Wallet },
+    { key: "referrals", label: "Referrals", icon: Gift },
     { key: "roadmap", label: "Roadmap", icon: Lightbulb },
   ];
 
@@ -442,6 +447,67 @@ export default function AdminPage() {
                   </div>
                 ))}
                 {data.deposits.length === 0 && <div className="py-10 text-center text-slate-500 text-xs">No deposits yet</div>}
+              </div>
+            </div>
+          )}
+
+          {/* ── REFERRALS ── */}
+          {tab === "referrals" && refData && (
+            <div className="space-y-5">
+              {/* Summary stats */}
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { label: "Active Referrers", value: refData.summary.totalReferrers, color: "text-emerald-400 bg-emerald-500/10" },
+                  { label: "Users Referred", value: refData.summary.totalReferred, color: "text-blue-400 bg-blue-500/10" },
+                  { label: "Total Paid Out", value: fmtINR(refData.summary.totalPaidOut), color: "text-purple-400 bg-purple-500/10" },
+                ].map((s, i) => (
+                  <div key={i} className="rounded-2xl border border-white/5 bg-[#0D1321]/60 p-4 text-center">
+                    <div className={`text-xl font-black ${s.color.split(" ")[0]}`}>{s.value}</div>
+                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wide mt-1">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Top referrers */}
+              <div className="rounded-2xl border border-white/5 bg-[#0D1321]/60 overflow-hidden">
+                <div className="px-5 py-3 border-b border-white/5 flex items-center gap-2">
+                  <Gift size={13} className="text-emerald-400" />
+                  <span className="text-xs font-extrabold text-white uppercase tracking-wider">Top Referrers</span>
+                </div>
+                {refData.topReferrers.length === 0 && <div className="py-8 text-center text-slate-500 text-xs">No referrals yet.</div>}
+                {refData.topReferrers.map((r, i) => (
+                  <div key={i} className="flex items-center justify-between px-5 py-3 border-b border-white/[0.03] hover:bg-white/[0.01] text-xs">
+                    <div>
+                      <div className="font-bold text-white">{r.name}</div>
+                      <div className="text-[10px] text-slate-500">{r.email}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-mono text-[11px] text-blue-400">{r.referralCode || "—"}</div>
+                      <div className="text-[10px] text-slate-500">{r.referredCount} referrals</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-black text-emerald-400">{fmtINR(r.earned)}</div>
+                      <div className="text-[10px] text-slate-500">earned</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Recent activity */}
+              <div className="rounded-2xl border border-white/5 bg-[#0D1321]/60 overflow-hidden">
+                <div className="px-5 py-3 border-b border-white/5">
+                  <span className="text-xs font-extrabold text-white uppercase tracking-wider">Recent Cashback Activity</span>
+                </div>
+                {refData.recentActivity.length === 0 && <div className="py-8 text-center text-slate-500 text-xs">No activity yet.</div>}
+                {refData.recentActivity.map((a, i) => (
+                  <div key={i} className="flex items-center justify-between px-5 py-3 border-b border-white/[0.03] hover:bg-white/[0.01] text-xs">
+                    <div>
+                      <div className="text-emerald-400 font-black">{fmtINR(a.amount)}</div>
+                      <div className="text-[10px] text-slate-500">{a.note}</div>
+                    </div>
+                    <div className="text-slate-500 text-[10px]">{a.time}</div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

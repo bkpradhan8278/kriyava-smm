@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { User, Shield, AlertTriangle, CheckCircle2, Moon, Sun, Bell, Phone } from "lucide-react";
+import { User, Shield, AlertTriangle, CheckCircle2, Moon, Sun, Bell, Phone, Gift, Copy } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
 import { saveAccount, getTheme, setTheme } from "@/lib/account";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
@@ -283,6 +283,43 @@ export default function SettingsPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* REFERRAL */}
+          <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6 space-y-4">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider border-b border-emerald-500/10 pb-3 flex items-center gap-2">
+              <Gift size={15} className="text-emerald-400" /> Referral Program
+            </h3>
+            <p className="text-xs text-slate-400 leading-relaxed">Share your referral link. Earn <span className="text-emerald-400 font-bold">5% cashback</span> every time a friend adds funds to their Kriyava wallet.</p>
+            {account.referralCode ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wide block mb-1">Your Referral Code</label>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-black text-emerald-400 text-sm bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2 flex-1">{account.referralCode}</span>
+                    <button onClick={() => { navigator.clipboard.writeText(account.referralCode!); showToast("Code copied!"); }}
+                      className="p-2.5 rounded-lg border border-white/10 bg-white/[0.03] text-slate-400 hover:text-white">
+                      <Copy size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wide block mb-1">Referral Link</label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-blue-400 font-mono bg-blue-500/5 border border-blue-500/10 rounded-lg px-3 py-2 flex-1 truncate">
+                      https://smm.kriyava.com/login?ref={account.referralCode}
+                    </span>
+                    <button onClick={() => { navigator.clipboard.writeText(`https://smm.kriyava.com/login?ref=${account.referralCode}`); showToast("Link copied!"); }}
+                      className="p-2.5 rounded-lg border border-white/10 bg-white/[0.03] text-slate-400 hover:text-white shrink-0">
+                      <Copy size={14} />
+                    </button>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500">Cashback is credited instantly when your referred friend adds funds.</p>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">Referral code not generated yet — will appear on next page refresh.</p>
+            )}
           </div>
 
           {/* DANGER ZONE WIPE ACCOUNT */}

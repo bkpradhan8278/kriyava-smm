@@ -20,9 +20,11 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Handle preset signup mode (?mode=up)
+  const refCode = searchParams.get("ref") || "";
+
+  // Handle preset signup mode (?mode=up or ?ref=CODE)
   useEffect(() => {
-    if (searchParams.get("mode") === "up") {
+    if (searchParams.get("mode") === "up" || searchParams.get("ref")) {
       setMode("up");
     }
   }, [searchParams]);
@@ -55,7 +57,7 @@ function LoginContent() {
     setLoading(true);
     try {
       const g = await signInWithGoogle(); // opens Google popup
-      const res = await api.social(g.email, g.name); // real backend account
+      const res = await api.social(g.email, g.name, refCode || undefined); // real backend account
       setToken(res.token);
       hydrateFromApi(res.user, g.photoURL);
       router.push("/dashboard");
@@ -87,7 +89,7 @@ function LoginContent() {
     try {
       const res =
         mode === "up"
-          ? await api.register(email.trim(), name.trim(), password)
+          ? await api.register(email.trim(), name.trim(), password, refCode || undefined)
           : await api.login(email.trim(), password);
       setToken(res.token);
       hydrateFromApi(res.user);
