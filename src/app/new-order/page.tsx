@@ -152,7 +152,7 @@ export default function NewOrderPage() {
           {/* Platform chips — horizontal scroll on mobile */}
           <div className="flex flex-col">
             <label className="text-[10.5px] font-extrabold uppercase tracking-wide text-slate-400 mb-2">Select Platform</label>
-            <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
+            <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 ">
               {platforms.map((p) => (
                 <button
                   key={p}
@@ -172,7 +172,7 @@ export default function NewOrderPage() {
           {/* Category filter dropdown */}
           <div className="flex flex-col">
             <label className="text-[10.5px] font-extrabold uppercase tracking-wide text-slate-400 mb-2">Category</label>
-            <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 -mx-1 px-1">
+            <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 ">
               {SERVICE_CATEGORIES.map((cat) => (
                 <button
                   key={cat}

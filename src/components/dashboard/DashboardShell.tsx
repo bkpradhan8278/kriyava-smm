@@ -264,7 +264,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* SCROLLABLE MAIN CONTENT */}
-        <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 scrollbar-thin">
+        <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 md:p-8 scrollbar-thin">
           {children}
         </main>
       </div>

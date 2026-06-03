@@ -9,15 +9,18 @@ import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
 export default function AddFundsPage() {
   const { account, sync } = useAccount();
-  const [amount, setAmount] = useState(10);
+  const [amountStr, setAmountStr] = useState("100");
+  const amount = Math.max(0, parseInt(amountStr.replace(/[^\d]/g, ""), 10) || 0);
   const [method, setMethod] = useState<"razorpay" | "upi" | "bank">("razorpay");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [paying, setPaying] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
 
+  const PRESET_AMOUNTS = [50, 100, 200, 500, 1000];
+
   const handleDepositSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isNaN(amount) || amount < 10) {
+    if (!amount || amount < 10) {
       showToast("❌ Minimum deposit is ₹10.");
       return;
     }
@@ -113,13 +116,32 @@ export default function AddFundsPage() {
             {/* Amount input */}
             <div className="flex flex-col">
               <label className="text-[10.5px] font-extrabold uppercase tracking-wide text-slate-400 mb-2">Deposit Amount (INR)</label>
+              {/* Preset quick-select */}
+              <div className="flex gap-2 mb-3 flex-wrap">
+                {PRESET_AMOUNTS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setAmountStr(String(p))}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all border ${
+                      amount === p
+                        ? "bg-blue-600 border-blue-500 text-white"
+                        : "border-white/10 bg-white/[0.02] text-slate-400 hover:text-white hover:border-white/20"
+                    }`}
+                  >
+                    ₹{p}
+                  </button>
+                ))}
+              </div>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 font-display text-lg font-black text-slate-500">₹</span>
                 <input
-                  type="number"
-                  min={10}
-                  value={amount}
-                  onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value, 10) || 0))}
+                  type="text"
+                  inputMode="numeric"
+                  value={amountStr}
+                  onChange={(e) => setAmountStr(e.target.value.replace(/[^\d]/g, ""))}
+                  onFocus={(e) => e.target.select()}
+                  placeholder="Enter amount"
                   required
                   className="w-full rounded-xl border border-white/5 bg-white/[0.01] px-4 py-3.5 pl-8 font-display text-lg font-black text-white placeholder-slate-600 outline-none focus:border-blue-500"
                 />

@@ -165,6 +165,10 @@ export const api = {
     request<{ reply: string; provider: string }>("/ai/chat", { method: "POST", body: p, auth: false }),
 
   adminSummary: () => request<AdminSummaryResponse>("/admin/summary"),
+  adminAddFunds: (email: string, amount: number, note?: string) =>
+    request<{ ok: boolean; added: number; newBalance: number }>("/admin/add-funds", {
+      method: "POST", body: { email, amount, note },
+    }),
 };
 
 export interface AdminOrderRow {
