@@ -102,6 +102,12 @@ export const api = {
       body: { email, password },
       auth: false,
     }),
+  social: (email: string, name: string) =>
+    request<{ token: string; user: ApiUser }>("/auth/social", {
+      method: "POST",
+      body: { email, name },
+      auth: false,
+    }),
   me: () => request<ApiUser>("/auth/me"),
 
   balance: () => request<{ balance: number; spent: number }>("/wallet/balance"),

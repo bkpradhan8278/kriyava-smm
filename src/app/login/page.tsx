@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Check, Lock, Sparkles, AlertCircle, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { loadAccount, saveAccount } from "@/lib/account";
 import { api, setToken, ApiError } from "@/lib/api";
+import { isFirebaseConfigured, signInWithGoogle } from "@/lib/firebase";
 
 function LoginContent() {
   const router = useRouter();
@@ -53,10 +54,34 @@ function LoginContent() {
   // Social sign-up/sign-in. Real OAuth needs a Google/Telegram app; until that's
   // configured we create a REAL persistent backend account tied to a stable
   // per-browser identity, so the user genuinely stays logged in across sessions.
-  const socialAuth = async (provider: "google" | "telegram", displayName: string) => {
+  // Google → real Firebase account-picker popup when configured.
+  const googleAuth = async () => {
+    setError("");
+    if (isFirebaseConfigured()) {
+      setLoading(true);
+      try {
+        const g = await signInWithGoogle(); // opens Google popup
+        const res = await api.social(g.email, g.name); // real backend account
+        setToken(res.token);
+        hydrateFromApi(res.user);
+        router.push("/dashboard");
+        return;
+      } catch (err) {
+        // popup closed/cancelled or network — show a gentle message, stay on page
+        const msg = err instanceof Error ? err.message : "Sign-in cancelled";
+        if (!/popup|cancel|closed/i.test(msg)) setError("Google sign-in failed. Try again.");
+        setLoading(false);
+        return;
+      }
+    }
+    // Firebase not configured yet → pseudo persistent account fallback
+    pseudoSocial("google", "Google User");
+  };
+
+  // Telegram (and Google fallback): pseudo persistent account tied to this browser.
+  const pseudoSocial = async (provider: "google" | "telegram", displayName: string) => {
     setError("");
     setLoading(true);
-    // stable per-device id so the same browser maps to the same account
     let did = localStorage.getItem("kriyava_device_id");
     if (!did) {
       did = Math.random().toString(36).slice(2, 10);
@@ -65,7 +90,6 @@ function LoginContent() {
     const pseudoEmail = `${provider}.${did}@kriyava.social`;
     const pseudoPass = `${provider}-${did}-kriyava`;
     try {
-      // try login first (returning user), else register (new user)
       let res;
       try {
         res = await api.login(pseudoEmail, pseudoPass);
@@ -248,7 +272,7 @@ function LoginContent() {
           {/* SOCIAL AUTH BUTTONS */}
           <div className="grid grid-cols-2 gap-3 mb-6">
             <button
-              onClick={() => socialAuth("google", "Google User")}
+              onClick={googleAuth}
               disabled={loading}
               className="flex items-center justify-center gap-2 border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] py-3 px-4 rounded-xl text-xs font-extrabold transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
             >
@@ -261,7 +285,7 @@ function LoginContent() {
               Google
             </button>
             <button
-              onClick={() => socialAuth("telegram", "Telegram User")}
+              onClick={() => pseudoSocial("telegram", "Telegram User")}
               disabled={loading}
               className="flex items-center justify-center gap-2 border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] py-3 px-4 rounded-xl text-xs font-extrabold transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
             >
