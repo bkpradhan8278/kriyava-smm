@@ -26,7 +26,7 @@ export function loadAccount(): Account {
 }
 
 function blank(): Account {
-  return { name: "Creator", balance: 500, spent: 0, orders: [], favorites: [], _seeded: true };
+  return { name: "Creator", balance: 0, spent: 0, orders: [], favorites: [], _seeded: true };
 }
 
 export function saveAccount(a: Account) {

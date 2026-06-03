@@ -128,4 +128,29 @@ export const api = {
   tickets: () => request<unknown[]>("/tickets"),
   createTicket: (subject: string, category: string, message: string) =>
     request<unknown>("/tickets", { method: "POST", body: { subject, category, message } }),
+
+  // payments (Razorpay)
+  paymentConfig: () =>
+    request<{ provider: string; enabled: boolean }>("/payments/config", { auth: false }),
+  createPaymentOrder: (amount: number) =>
+    request<{ orderId: string; amount: number; currency: string; keyId: string }>(
+      "/payments/create-order",
+      { method: "POST", body: { amount } },
+    ),
+  verifyPayment: (p: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
+    request<{ added: number; balance: number }>("/payments/verify", { method: "POST", body: p }),
 };
+
+// Loads the Razorpay checkout script once.
+export function loadRazorpay(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    // @ts-expect-error injected global
+    if (window.Razorpay) return resolve(true);
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}

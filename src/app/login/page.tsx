@@ -51,57 +51,24 @@ function LoginContent() {
     saveAccount(acc);
   };
 
-  // Social sign-up/sign-in. Real OAuth needs a Google/Telegram app; until that's
-  // configured we create a REAL persistent backend account tied to a stable
-  // per-browser identity, so the user genuinely stays logged in across sessions.
-  // Google → real Firebase account-picker popup when configured.
+  // Google → real Firebase account-picker popup → real backend account.
   const googleAuth = async () => {
     setError("");
-    if (isFirebaseConfigured()) {
-      setLoading(true);
-      try {
-        const g = await signInWithGoogle(); // opens Google popup
-        const res = await api.social(g.email, g.name); // real backend account
-        setToken(res.token);
-        hydrateFromApi(res.user);
-        router.push("/dashboard");
-        return;
-      } catch (err) {
-        // popup closed/cancelled or network — show a gentle message, stay on page
-        const msg = err instanceof Error ? err.message : "Sign-in cancelled";
-        if (!/popup|cancel|closed/i.test(msg)) setError("Google sign-in failed. Try again.");
-        setLoading(false);
-        return;
-      }
+    if (!isFirebaseConfigured()) {
+      setError("Google sign-in is being set up. Please use email for now.");
+      return;
     }
-    // Firebase not configured yet → pseudo persistent account fallback
-    pseudoSocial("google", "Google User");
-  };
-
-  // Telegram (and Google fallback): pseudo persistent account tied to this browser.
-  const pseudoSocial = async (provider: "google" | "telegram", displayName: string) => {
-    setError("");
     setLoading(true);
-    let did = localStorage.getItem("kriyava_device_id");
-    if (!did) {
-      did = Math.random().toString(36).slice(2, 10);
-      localStorage.setItem("kriyava_device_id", did);
-    }
-    const pseudoEmail = `${provider}.${did}@kriyava.social`;
-    const pseudoPass = `${provider}-${did}-kriyava`;
     try {
-      let res;
-      try {
-        res = await api.login(pseudoEmail, pseudoPass);
-      } catch {
-        res = await api.register(pseudoEmail, displayName, pseudoPass);
-      }
+      const g = await signInWithGoogle(); // opens Google popup
+      const res = await api.social(g.email, g.name); // real backend account
       setToken(res.token);
       hydrateFromApi(res.user);
       router.push("/dashboard");
-    } catch {
-      demoLogin(displayName, pseudoEmail);
-      router.push("/dashboard");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Sign-in cancelled";
+      if (!/popup|cancel|closed/i.test(msg)) setError("Google sign-in failed. Please try again.");
+      setLoading(false);
     }
   };
 
@@ -269,30 +236,20 @@ function LoginContent() {
             </p>
           </div>
 
-          {/* SOCIAL AUTH BUTTONS */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          {/* SOCIAL AUTH BUTTON */}
+          <div className="mb-6">
             <button
               onClick={googleAuth}
               disabled={loading}
-              className="flex items-center justify-center gap-2 border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] py-3 px-4 rounded-xl text-xs font-extrabold transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2.5 border border-white/10 bg-white/[0.02] hover:bg-white/[0.06] py-3.5 px-4 rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
             >
-              <svg width="15" height="15" viewBox="0 0 24 24" className="mr-0.5">
+              <svg width="18" height="18" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.5 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-7.9Z" />
                 <path fill="#34A853" d="M12 23c2.9 0 5.4-1 7.2-2.6l-3.6-2.7c-1 .7-2.3 1.1-3.6 1.1-2.8 0-5.1-1.9-6-4.4H2.3v2.8A11 11 0 0 0 12 23Z" />
                 <path fill="#FBBC05" d="M6 14.4a6.6 6.6 0 0 1 0-4.2V7.4H2.3a11 11 0 0 0 0 9.8L6 14.4Z" />
                 <path fill="#EA4335" d="M12 5.4c1.6 0 3 .6 4.1 1.6l3.1-3.1A11 11 0 0 0 2.3 7.4L6 10.2c.9-2.6 3.2-4.8 6-4.8Z" />
               </svg>
-              Google
-            </button>
-            <button
-              onClick={() => pseudoSocial("telegram", "Telegram User")}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] py-3 px-4 rounded-xl text-xs font-extrabold transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="#229ED9" className="mr-0.5">
-                <path d="M21.94 4.5 18.6 20.2c-.25 1.1-.92 1.38-1.86.86l-5.14-3.79-2.48 2.39c-.27.27-.5.5-1.03.5l.37-5.24L18.1 6.2c.41-.37-.09-.57-.64-.2L5.7 13.62.63 12.04c-1.1-.34-1.12-1.1.23-1.63L20.5 2.9c.92-.34 1.72.22 1.44 1.6Z" />
-              </svg>
-              Telegram
+              Continue with Google
             </button>
           </div>
 

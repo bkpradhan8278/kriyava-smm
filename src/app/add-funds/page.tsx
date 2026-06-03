@@ -1,9 +1,10 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
-import { Shield, Sparkles, Wallet, CheckCircle2, CreditCard, Smartphone, DollarSign, Calendar } from "lucide-react";
+import { Shield, Wallet, CheckCircle2, CreditCard, Smartphone, DollarSign, Calendar } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
-import { addFunds, fmtINR, saveAccount } from "@/lib/account";
+import { fmtINR, saveAccount } from "@/lib/account";
+import { api, loadRazorpay, ApiError } from "@/lib/api";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
 export default function AddFundsPage() {
@@ -16,45 +17,73 @@ export default function AddFundsPage() {
 
   const handleDepositSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isNaN(amount) || amount <= 0) {
-      showToast("❌ Please enter a valid deposit amount.");
+    if (isNaN(amount) || amount < 50) {
+      showToast("❌ Minimum deposit is ₹50.");
       return;
     }
     setCheckoutOpen(true);
   };
 
-  const handleSimulatePayment = () => {
+  // Real Razorpay payment → backend verifies signature → wallet credited.
+  const handlePayment = async () => {
     setPaying(true);
+    try {
+      const ok = await loadRazorpay();
+      if (!ok) throw new Error("Could not load payment gateway");
 
-    setTimeout(() => {
-      // Automatically calculate 5% cashback
-      const bonus = amount >= 1000 ? Math.round(amount * 0.05) : 0;
-      const credit = amount + bonus;
+      const order = await api.createPaymentOrder(amount); // backend creates Razorpay order
 
-      const a = { ...account };
-      a.balance = +((a.balance || 0) + credit).toFixed(2);
-      
-      a.txns = a.txns || [];
-      a.txns.unshift({
-        id: "TXN" + (1000 + a.txns.length + 1),
-        type: "Deposit",
-        amount: credit,
-        at: Date.now(),
-        method: method === "razorpay" ? "Razorpay Card" : method === "upi" ? "UPI QR Scan" : "Bank Transfer IMPS",
+      await new Promise<void>((resolve, reject) => {
+        // @ts-expect-error Razorpay is injected by the checkout script
+        const rzp = new window.Razorpay({
+          key: order.keyId,
+          amount: Math.round(order.amount * 100),
+          currency: order.currency,
+          name: "Kriyava SMM",
+          description: "Wallet top-up",
+          order_id: order.orderId,
+          prefill: { name: account.name || "", email: account.email || "" },
+          theme: { color: "#2563EB" },
+          handler: async (resp: {
+            razorpay_order_id: string;
+            razorpay_payment_id: string;
+            razorpay_signature: string;
+          }) => {
+            try {
+              const res = await api.verifyPayment(resp); // backend verifies + credits
+              const a = { ...account, balance: res.balance };
+              a.txns = a.txns || [];
+              a.txns.unshift({
+                id: resp.razorpay_payment_id,
+                type: "Deposit",
+                amount: res.added,
+                at: Date.now(),
+                method: "Razorpay",
+              });
+              saveAccount(a);
+              refresh();
+              setCheckoutOpen(false);
+              showToast(`✅ Added ${fmtINR(res.added)} to your wallet!`);
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          },
+          modal: { ondismiss: () => reject(new Error("Payment cancelled")) },
+        });
+        rzp.open();
       });
-
-      saveAccount(a);
-      refresh();
-      
+    } catch (err) {
+      const msg =
+        err instanceof ApiError && err.status === 503
+          ? "Payments are being set up. Please try again soon."
+          : err instanceof Error
+            ? err.message
+            : "Payment failed";
+      if (!/cancel/i.test(msg)) showToast("❌ " + msg);
+    } finally {
       setPaying(false);
-      setCheckoutOpen(false);
-
-      if (bonus > 0) {
-        showToast(`✅ Deposited ${fmtINR(amount)} + ₹${bonus} Cashback Bonus successfully!`);
-      } else {
-        showToast(`✅ Deposited ${fmtINR(amount)} successfully!`);
-      }
-    }, 1500);
+    }
   };
 
   const showToast = (msg: string) => {
@@ -75,8 +104,8 @@ export default function AddFundsPage() {
         <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-6 backdrop-blur-md text-left space-y-6">
           <div className="flex items-center justify-between border-b border-white/5 pb-4">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider">Fund Wallet</h3>
-            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-2.5 py-1 rounded-md flex items-center gap-1">
-              <Sparkles size={11} /> 5% Cashback Active
+            <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 px-2.5 py-1 rounded-md flex items-center gap-1">
+              <Shield size={11} /> Secured by Razorpay
             </span>
           </div>
 
@@ -88,7 +117,7 @@ export default function AddFundsPage() {
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 font-display text-lg font-black text-slate-500">₹</span>
                 <input
                   type="number"
-                  min={100}
+                  min={50}
                   value={amount}
                   onChange={(e) => setAmount(Math.max(1, parseInt(e.target.value, 10) || 0))}
                   required
@@ -96,7 +125,7 @@ export default function AddFundsPage() {
                 />
               </div>
               <span className="text-[10px] text-slate-500 font-bold mt-1.5 block">
-                Minimum deposit: ₹100. Wholesale bonuses automatically calculated.
+                Minimum deposit: ₹50. Pay securely via UPI, cards or netbanking.
               </span>
             </div>
 
@@ -106,8 +135,8 @@ export default function AddFundsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { id: "razorpay", label: "Razorpay Checkout", desc: "Cards, Netbanking", icon: CreditCard },
-                  { id: "upi", label: "UPI Instant QR", desc: "Google Pay, PhonePe", icon: Smartphone },
-                  { id: "bank", label: "Wire IMPS / NEFT", desc: "Wholesale (2% Bonus)", icon: DollarSign },
+                  { id: "upi", label: "UPI Instant", desc: "Google Pay, PhonePe", icon: Smartphone },
+                  { id: "bank", label: "Net Banking", desc: "All major banks", icon: DollarSign },
                 ].map((m) => {
                   const Icon = m.icon;
                   return (
@@ -138,11 +167,11 @@ export default function AddFundsPage() {
             </button>
           </form>
 
-          {/* Cashback highlight */}
+          {/* Security note */}
           <div className="flex gap-2.5 rounded-xl border border-white/5 bg-white/[0.02] p-4 text-[11px] leading-relaxed text-slate-400">
-            <Sparkles size={18} className="text-emerald-400 shrink-0 mt-0.5" />
+            <Shield size={18} className="text-blue-400 shrink-0 mt-0.5" />
             <p>
-              🎁 **Wholesale Cashback Offer**: Top up ₹1,000.00 or more in a single transaction, and automatically receive a **5% cash bonus** directly added to your Kriyava wallet. No coupons needed.
+              All payments are processed securely through Razorpay with 256-bit encryption. Funds are credited to your wallet instantly after a successful payment.
             </p>
           </div>
         </div>
@@ -158,14 +187,8 @@ export default function AddFundsPage() {
               <span className="text-slate-400 text-xs font-bold">Current Balance:</span>
               <b className="text-2xl font-display font-black text-emerald-400">{fmtINR(account.balance)}</b>
             </div>
-            {amount >= 1000 && (
-              <div className="flex items-center justify-between text-xs font-bold text-slate-400 border-t border-white/5 pt-3">
-                <span>Calculated 5% Bonus:</span>
-                <span className="text-emerald-400">+ ₹{Math.round(amount * 0.05)} Bonus Wallet Credits</span>
-              </div>
-            )}
 
-            {/* Simulated Transactions */}
+            {/* Transactions */}
             <div className="border-t border-white/5 pt-4">
               <h4 className="text-[10px] font-extrabold text-slate-400 tracking-wider uppercase mb-3.5">
                 Recent Wallet Deposits
@@ -197,29 +220,23 @@ export default function AddFundsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadein">
           <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0D1321] p-6 shadow-2xl relative text-left">
             <h3 className="font-display text-lg font-black text-white mb-4 flex items-center gap-2 border-b border-white/5 pb-3">
-              <Shield size={18} className="text-emerald-400" />
-              Secure deposit simulator
+              <Shield size={18} className="text-blue-400" />
+              Confirm deposit
             </h3>
-            
+
             <div className="space-y-3.5 text-xs text-slate-300">
               <div className="flex justify-between">
-                <span>Vendor:</span>
-                <span className="text-white font-semibold">Kriyava Social Platform</span>
+                <span>Platform:</span>
+                <span className="text-white font-semibold">Kriyava SMM</span>
               </div>
               <div className="flex justify-between">
-                <span>Method:</span>
-                <span className="text-white font-bold uppercase">{method} Gateway</span>
+                <span>Pay via:</span>
+                <span className="text-white font-bold">Razorpay (UPI / Cards / Netbanking)</span>
               </div>
-              <div className="flex justify-between">
-                <span>Total Amount:</span>
-                <b className="text-white">{fmtINR(amount)}</b>
+              <div className="flex justify-between border-t border-white/5 pt-3">
+                <span>Amount:</span>
+                <b className="text-white text-base">{fmtINR(amount)}</b>
               </div>
-              {amount >= 1000 && (
-                <div className="flex justify-between text-emerald-400 font-bold bg-emerald-500/5 p-2 rounded-lg border border-emerald-500/10">
-                  <span>Cashback bonus credit:</span>
-                  <span>+ ₹{Math.round(amount * 0.05)}</span>
-                </div>
-              )}
             </div>
 
             <div className="mt-6 flex items-center gap-3">
@@ -228,14 +245,14 @@ export default function AddFundsPage() {
                 className="btn btn-ghost flex-1 !py-2.5 !text-xs font-bold"
                 disabled={paying}
               >
-                Cancel Checkout
+                Cancel
               </button>
               <button
-                onClick={handleSimulatePayment}
+                onClick={handlePayment}
                 className="btn btn-cta flex-1 !py-2.5 !text-xs font-bold"
                 disabled={paying}
               >
-                {paying ? "authorizing..." : "Simulate Payment"}
+                {paying ? "Opening…" : `Pay ${fmtINR(amount)}`}
               </button>
             </div>
           </div>

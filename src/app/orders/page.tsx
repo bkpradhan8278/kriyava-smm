@@ -15,62 +15,7 @@ export default function OrdersPage() {
   const [search, setSearch] = useState("");
   const [toastMsg, setToastMsg] = useState("");
 
-  // Seed default orders if none exist
-  useEffect(() => {
-    if (!account.orders || account.orders.length === 0) {
-      const a = { ...account };
-      a.orders = [
-        {
-          id: "ORD10007",
-          service: "📸 Instagram Followers [High Quality Accounts] | 30 Days Refill Button | Speed: 20K/Day",
-          qty: 5000,
-          link: "https://instagram.com/yourbrand",
-          charge: 245.0,
-          status: "Completed",
-          at: Date.now() - 86400000 * 3,
-        },
-        {
-          id: "ORD10006",
-          service: "🎥 Instagram Video Views All Link - Video+ Reel + IGTV - Slow",
-          qty: 50000,
-          link: "https://instagram.com/reel/abc",
-          charge: 46.5,
-          status: "Completed",
-          at: Date.now() - 86400000 * 2,
-        },
-        {
-          id: "ORD10005",
-          service: "✈️ Telegram Members [Quality: Mix Active Profiles] | No Drop | No Refill",
-          qty: 2000,
-          link: "https://t.me/yourchannel",
-          charge: 16.0,
-          status: "Partial",
-          at: Date.now() - 86400000,
-        },
-        {
-          id: "ORD10004",
-          service: "❤️ Instagram Likes | Cheapest Service In Market ✅ [Lifetime Refill]",
-          qty: 3000,
-          link: "https://instagram.com/p/xyz",
-          charge: 42.0,
-          status: "In progress",
-          at: Date.now() - 3600000,
-        },
-        {
-          id: "ORD10003",
-          service: "⭕ YouTube 100% Real Views - Min- 100k Speed - 500K - 1M+/day Non Drop",
-          qty: 10000,
-          link: "https://youtu.be/abcd",
-          charge: 1150.0,
-          status: "Processing",
-          at: Date.now() - 1800000,
-        },
-      ];
-      a.spent = 1499.5;
-      saveAccount(a);
-      refresh();
-    }
-  }, [account, refresh]);
+  // Orders come from real user activity — no seeded demo data.
 
   const getStatusClass = (s: string) => {
     const l = (s || "").toLowerCase();
