@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, clearToken, getToken } from "@/lib/api";
+import { createAccountCache, loadAccount, saveAccount } from "@/lib/account";
 import { RefreshCw } from "lucide-react";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -15,9 +16,25 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
     api.me()
-      .then(() => setStatus("ok"))
+      .then((me) => {
+        const cached = loadAccount();
+        saveAccount(
+          createAccountCache({
+            ...cached,
+            name: me.name,
+            email: me.email,
+            phone: me.phone || cached.phone,
+            avatarUrl: cached.email === me.email ? cached.avatarUrl : undefined,
+            balance: me.balance,
+            spent: me.spent,
+            apiKey: me.apiKey,
+          }),
+        );
+        setStatus("ok");
+      })
       .catch(() => {
         clearToken();
+        localStorage.removeItem("kriyava_account_v1");
         setStatus("redirect");
         router.replace("/login");
       });

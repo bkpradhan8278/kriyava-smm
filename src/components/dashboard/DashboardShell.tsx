@@ -57,6 +57,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const handleLogout = () => {
     clearToken();
+    localStorage.removeItem("kriyava_account_v1");
     router.push("/login");
   };
 
@@ -65,7 +66,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const avatar = (size = "h-9 w-9") => (
     <div className={`${size} overflow-hidden rounded-xl bg-gradient-to-tr from-blue-600 to-purple-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md uppercase shrink-0`}>
       {account.avatarUrl ? (
-        <Image src={account.avatarUrl} alt="" width={48} height={48} className="h-full w-full object-cover" />
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={account.avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
       ) : initials ? (
         <span>{initials}</span>
       ) : (
@@ -154,6 +156,26 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+
+        <div className="shrink-0 border-t border-white/5 bg-white/[0.01] p-4">
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/5 bg-white/[0.02] px-3 py-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              {avatar("h-9 w-9")}
+              <div className="min-w-0">
+                <div className="truncate text-xs font-bold text-white">{firstName}</div>
+                <div className="text-[10px] font-medium text-slate-400">welcome back</div>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/5 bg-white/[0.02] text-slate-300 transition-colors hover:bg-rose-500/10 hover:text-rose-400"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
+        </div>
       </aside>
 
       {/* MAIN CONTAINER */}
@@ -219,14 +241,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <div className="text-[10px] text-blue-400 font-bold mt-1">Creator Tier</div>
               </div>
               {avatar()}
-              <button
-                onClick={handleLogout}
-                className="h-9 w-9 grid place-items-center rounded-xl bg-white/[0.02] border border-white/5 hover:bg-rose-500/10 text-slate-300 hover:text-rose-400 transition-colors"
-                title="Logout"
-                aria-label="Logout"
-              >
-                <LogOut size={16} />
-              </button>
             </div>
           </div>
         </header>
