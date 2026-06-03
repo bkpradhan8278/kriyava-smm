@@ -16,6 +16,18 @@ export interface MarketService {
   min: number | null;
   max: number | null;
   provider: string;
+  providerServiceId?: string;
+  providerCostInr?: number;
+  providerRate?: number;
+  providerCurrency?: string;
+  backupProviders?: Array<{
+    key: string;
+    name: string;
+    serviceId: string;
+    rate: number;
+    currency: string;
+    costInr: number;
+  }>;
 }
 
 export interface HeadlineCard {

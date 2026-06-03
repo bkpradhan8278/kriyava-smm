@@ -97,6 +97,11 @@ export interface ApiTicket {
   status: string;
   at: string;
 }
+export interface ApiServicesResponse {
+  count: number;
+  source?: { live: boolean; services: number; providers: Record<string, number> };
+  services: import("./types").MarketService[];
+}
 
 export const api = {
   base: API_BASE,
@@ -129,6 +134,10 @@ export const api = {
       body: { amount },
     }),
   transactions: () => request<ApiTxn[]>("/wallet/transactions"),
+
+  services: () => request<ApiServicesResponse>("/services", { auth: false }),
+  providerStatus: () =>
+    request<{ live: boolean; services: number; providers: Record<string, number> }>("/services/provider-status", { auth: false }),
 
   orders: () => request<ApiOrder[]>("/orders"),
   createOrder: (serviceId: string, quantity: number, link: string) =>

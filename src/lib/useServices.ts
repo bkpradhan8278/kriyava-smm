@@ -2,18 +2,25 @@
 // Loads the marketplace + headline service data (from /public/assets).
 import { useEffect, useState } from "react";
 import type { MarketService, HeadlineCard } from "./types";
+import { api } from "./api";
 
 export function useMarket() {
   const [services, setServices] = useState<MarketService[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let alive = true;
-    fetch("/assets/services_market.json")
-      .then((r) => r.json())
+    api.services()
       .then((j) => {
         if (alive) setServices(j.services || []);
       })
-      .catch(() => {})
+      .catch(() => {
+        fetch("/assets/services_market.json")
+          .then((r) => r.json())
+          .then((j) => {
+            if (alive) setServices(j.services || []);
+          })
+          .catch(() => {});
+      })
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
