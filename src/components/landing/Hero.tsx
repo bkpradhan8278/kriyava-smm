@@ -79,8 +79,9 @@ export function Hero() {
             </div>
           </Reveal>
           <Reveal delay={0.05}>
-            <h1 className="mt-5 text-[clamp(28px,4.8vw,56px)] font-black leading-[1.08] text-[color:var(--color-ink)] tracking-tight text-center lg:text-left">
-              Grow your social media <br />presence <span className="grad-text">faster than ever</span>
+            <h1 className="mt-5 text-[clamp(28px,4.2vw,50px)] font-black leading-[1.1] text-[color:var(--color-ink)] tracking-tight text-center lg:text-left">
+              Grow your social media presence{" "}
+              <span className="grad-text">faster than ever</span>
             </h1>
           </Reveal>
           <Reveal delay={0.1}>
