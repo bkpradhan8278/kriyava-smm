@@ -16,6 +16,7 @@ export interface MarketService {
   min: number | null;
   max: number | null;
   provider: string;
+  description?: string;
   providerServiceId?: string;
   providerCostInr?: number;
   providerRate?: number;

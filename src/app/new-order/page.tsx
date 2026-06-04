@@ -244,6 +244,12 @@ export default function NewOrderPage() {
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Service Info</span>
                 <div className="flex">{Array.from({length:5}).map((_,i)=><Star key={i} size={10} className={i<activeService.quality?"text-amber-400 fill-amber-400":"text-slate-700"}/>)}</div>
               </div>
+              {/* Generated description */}
+              {activeService.description && (
+                <p className="text-[11px] text-slate-300 leading-relaxed bg-blue-500/5 border border-blue-500/10 rounded-lg px-3 py-2">
+                  {activeService.description}
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
                 {[["Speed",activeService.speed],["Refill",activeService.refill],["Min",`${(activeService.min||1).toLocaleString()}`],["Max",activeService.max?activeService.max.toLocaleString():"∞"],["Rate/1K",fmtINR(activeService.price)],["Margin",`${activeService.margin_pct}%`]].map(([l,v])=>(
                   <div key={l} className="flex justify-between border-b border-white/5 pb-1">
