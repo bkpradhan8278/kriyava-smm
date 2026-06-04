@@ -20,27 +20,28 @@ import { motion } from "framer-motion";
 export function Metrics() {
   const items = [
     { node: <CountUp to={1200} suffix="+" />,    label: "Customers" },
-    { node: <CountUp to={8500} suffix="+" />,    label: "Orders delivered" },
-    { node: <CountUp to={99.8} suffix="%" decimals={1} />, label: "Success rate" },
-    { node: "24/7", label: "Live support" },
+    { node: <CountUp to={8500} suffix="+" />,    label: "Orders Delivered" },
+    { node: <CountUp to={99.8} suffix="%" decimals={1} />, label: "Success Rate" },
+    { node: "24/7", label: "Live Support" },
   ];
   return (
     <section className="section-pad py-10">
       <div className="container-x">
-        <Stagger className="grid grid-cols-2 gap-4 md:grid-cols-4" stagger={0.07}>
+        {/* Cards are always visible — no opacity:0 initial state so they never blank-flash on load */}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {items.map((m, i) => (
-            <StaggerItem key={i}>
-              <motion.div
-                whileHover={{ y: -4, boxShadow: "0 8px 24px rgba(37,99,235,.10)" }}
-                transition={{ duration: 0.2 }}
-                className="rounded-[16px] border border-[color:var(--color-line)] bg-gradient-to-b from-white to-[color:var(--color-surface)] p-6 text-center shadow-sm"
-              >
-                <div className="font-display text-[clamp(28px,4vw,42px)] font-extrabold tracking-[-0.03em] text-[color:var(--color-primary)]">{m.node}</div>
-                <div className="mt-1.5 text-[11px] font-bold text-[color:var(--color-muted)] uppercase tracking-wider">{m.label}</div>
-              </motion.div>
-            </StaggerItem>
+            <motion.div key={i}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.38, ease: [0.22,1,0.36,1], delay: i * 0.06 }}
+              whileHover={{ y: -4, boxShadow: "0 8px 24px rgba(37,99,235,.10)" }}
+              className="rounded-[16px] border border-[color:var(--color-line)] bg-gradient-to-b from-white to-[color:var(--color-surface)] p-6 text-center shadow-sm"
+            >
+              <div className="font-display text-[clamp(28px,4vw,42px)] font-extrabold tracking-[-0.03em] text-[color:var(--color-primary)]">{m.node}</div>
+              <div className="mt-1.5 text-[11px] font-bold text-[color:var(--color-muted)] uppercase tracking-wider">{m.label}</div>
+            </motion.div>
           ))}
-        </Stagger>
+        </div>
       </div>
     </section>
   );

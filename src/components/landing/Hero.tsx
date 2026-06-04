@@ -93,13 +93,8 @@ export function Hero() {
           </Reveal>
         </div>
 
-        {/* ── RIGHT VISUAL ───────────────────────────────────────────── */}
-        {/* Mobile: lightweight platform grid — NO continuous animations */}
-        <Reveal delay={0.15} className="lg:hidden">
-          <MobileHeroVisual />
-        </Reveal>
-        {/* Desktop only: full 3D orbit (expensive, fine on desktop GPU) */}
-        <Reveal delay={0.18} className="hidden lg:block">
+        {/* ── RIGHT VISUAL — orbit on all screens ────────────────────── */}
+        <Reveal delay={0.15}>
           <DashboardMock />
         </Reveal>
       </div>
