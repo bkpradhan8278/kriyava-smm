@@ -74,7 +74,7 @@ export function Hero() {
             <div className="flex justify-center lg:justify-start">
               <span className="badge inline-flex items-center gap-2 rounded-full border border-[color:var(--color-line)] bg-white/70 px-3.5 py-1.5 text-[12px] font-semibold text-[#334155] shadow-sm backdrop-blur-md">
                 <span className="h-[6px] w-[6px] rounded-full bg-[color:var(--color-success)] shadow-[0_0_0_3px_rgba(34,197,94,.18)] animate-pulse" />
-                🚀 Trusted by 50,000+ marketers
+                🚀 Trusted by 1,000+ creators
               </span>
             </div>
           </Reveal>
@@ -107,12 +107,12 @@ export function Hero() {
               </div>
               <div className="h-[30px] w-px bg-[color:var(--color-line)] shrink-0" />
               <div className="flex flex-col gap-0.5 text-center lg:text-left items-center lg:items-start">
-                <b className="font-display text-[14px] sm:text-[15px] font-extrabold text-[color:var(--color-ink)]"><CountUp to={50000} suffix="K+" divide={1000} /></b>
+                <b className="font-display text-[14px] sm:text-[15px] font-extrabold text-[color:var(--color-ink)]"><CountUp to={5000} suffix="K+" divide={1000} /></b>
                 <span className="text-[9.5px] sm:text-[11px] font-bold text-[color:var(--color-muted)] uppercase tracking-wide whitespace-nowrap">Customers</span>
               </div>
               <div className="h-[30px] w-px bg-[color:var(--color-line)] shrink-0" />
               <div className="flex flex-col gap-0.5 text-center lg:text-left items-center lg:items-start">
-                <b className="font-display text-[14px] sm:text-[15px] font-extrabold text-[color:var(--color-ink)]"><CountUp to={1000000} suffix="M+" divide={1000000} /></b>
+                <b className="font-display text-[14px] sm:text-[15px] font-extrabold text-[color:var(--color-ink)]"><CountUp to={10000} suffix="K+" divide={1000} /></b>
                 <span className="text-[9.5px] sm:text-[11px] font-bold text-[color:var(--color-muted)] uppercase tracking-wide whitespace-nowrap">Orders</span>
               </div>
             </div>
