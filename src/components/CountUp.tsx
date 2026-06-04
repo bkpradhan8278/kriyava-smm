@@ -6,7 +6,7 @@ export function CountUp({
   suffix = "",
   decimals = 0,
   divide = 1,
-  duration = 1600,
+  duration = 700,
 }: {
   to: number;
   suffix?: string;

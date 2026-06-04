@@ -8,6 +8,10 @@ import { createAccountCache, saveAccount } from "@/lib/account";
 import { api, setToken, ApiError } from "@/lib/api";
 import { isFirebaseConfigured, signInWithGoogle } from "@/lib/firebase";
 
+const LAST_GOOGLE_KEY = "kriyava_last_google";
+
+interface LastGoogleUser { name: string; email: string; photoURL?: string }
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -19,6 +23,15 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [lastGoogle, setLastGoogle] = useState<LastGoogleUser | null>(null);
+
+  // Load last-signed-in Google account on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LAST_GOOGLE_KEY);
+      if (raw) setLastGoogle(JSON.parse(raw) as LastGoogleUser);
+    } catch { /* ignore */ }
+  }, []);
 
   const refCode = searchParams.get("ref") || "";
 
@@ -60,6 +73,8 @@ function LoginContent() {
       const res = await api.social(g.email, g.name, refCode || undefined); // real backend account
       setToken(res.token);
       hydrateFromApi(res.user, g.photoURL);
+      // Save for one-tap on next visit
+      localStorage.setItem(LAST_GOOGLE_KEY, JSON.stringify({ name: g.name, email: g.email, photoURL: g.photoURL }));
       router.push("/dashboard");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign-in cancelled";
@@ -231,12 +246,44 @@ function LoginContent() {
             </p>
           </div>
 
+          {/* ONE-TAP: last signed-in Google account */}
+          {lastGoogle && mode === "in" && (
+            <div className="mb-4">
+              <button onClick={googleAuth} disabled={loading}
+                className="w-full flex items-center justify-between gap-3 border border-blue-500/30 bg-blue-500/8 hover:bg-blue-500/15 py-3 px-4 rounded-xl transition-all active:scale-[0.99] disabled:opacity-50">
+                <div className="flex items-center gap-3 min-w-0">
+                  {lastGoogle.photoURL ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={lastGoogle.photoURL} alt="" className="h-9 w-9 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="h-9 w-9 rounded-full bg-blue-600 grid place-items-center text-white font-black text-sm shrink-0">
+                      {lastGoogle.name[0]}
+                    </div>
+                  )}
+                  <div className="text-left min-w-0">
+                    <div className="text-sm font-bold text-white truncate">Sign in as {lastGoogle.name}</div>
+                    <div className="text-[11px] text-slate-400 truncate">{lastGoogle.email}</div>
+                  </div>
+                </div>
+                <svg width="20" height="20" viewBox="0 0 24 24" className="shrink-0">
+                  <path fill="#4285F4" d="M22.5 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-7.9Z"/>
+                  <path fill="#34A853" d="M12 23c2.9 0 5.4-1 7.2-2.6l-3.6-2.7c-1 .7-2.3 1.1-3.6 1.1-2.8 0-5.1-1.9-6-4.4H2.3v2.8A11 11 0 0 0 12 23Z"/>
+                  <path fill="#FBBC05" d="M6 14.4a6.6 6.6 0 0 1 0-4.2V7.4H2.3a11 11 0 0 0 0 9.8L6 14.4Z"/>
+                  <path fill="#EA4335" d="M12 5.4c1.6 0 3 .6 4.1 1.6l3.1-3.1A11 11 0 0 0 2.3 7.4L6 10.2c.9-2.6 3.2-4.8 6-4.8Z"/>
+                </svg>
+              </button>
+              <p className="text-[10px] text-slate-500 text-center mt-2">
+                Not you? <button onClick={() => { localStorage.removeItem(LAST_GOOGLE_KEY); setLastGoogle(null); }} className="text-blue-400 hover:underline">Use a different account</button>
+              </p>
+            </div>
+          )}
+
           {/* SOCIAL AUTH BUTTON */}
           <div className="mb-6">
             <button
               onClick={googleAuth}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2.5 border border-white/10 bg-white/[0.02] hover:bg-white/[0.06] py-3.5 px-4 rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
+              className={`w-full flex items-center justify-center gap-2.5 border border-white/10 bg-white/[0.02] hover:bg-white/[0.06] py-3.5 px-4 rounded-xl text-sm font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 ${lastGoogle && mode === "in" ? "hidden" : ""}`}
             >
               <svg width="18" height="18" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.5 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-7.9Z" />
