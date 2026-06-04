@@ -131,6 +131,18 @@ html[data-theme="light"] .dashboard-shell textarea {
   }
 }
 
+/* ---- performance: GPU-layer hints for heavy animated elements ---- */
+.landing-card {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* ---- simplify heavy gradients on low-power mobile ---- */
+@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+  /* Reduce complex multi-layer radial gradients on mobile */
+  .hero-bg-glow { display: none; }
+}
+
 /* ---- prevent iOS input zoom (font-size must be >= 16px on mobile) ---- */
 @media (max-width: 767px) {
   input[type="text"],

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -19,21 +19,25 @@ import { motion } from "framer-motion";
 /* ---------------- Trust metrics ---------------- */
 export function Metrics() {
   const items = [
-    { node: <CountUp to={50000} suffix="K+" divide={1000} />, label: "Customers" },
-    { node: <CountUp to={1000000} suffix="M+" divide={1000000} />, label: "Orders delivered" },
-    { node: <CountUp to={99.9} suffix="%" decimals={1} />, label: "Success rate" },
+    { node: <CountUp to={1200} suffix="+" />,    label: "Customers" },
+    { node: <CountUp to={8500} suffix="+" />,    label: "Orders delivered" },
+    { node: <CountUp to={99.8} suffix="%" decimals={1} />, label: "Success rate" },
     { node: "24/7", label: "Live support" },
   ];
   return (
-    <section className="section-pad py-12">
+    <section className="section-pad py-10">
       <div className="container-x">
-        <Stagger className="grid grid-cols-2 gap-6 md:grid-cols-4">
+        <Stagger className="grid grid-cols-2 gap-4 md:grid-cols-4" stagger={0.07}>
           {items.map((m, i) => (
             <StaggerItem key={i}>
-              <div className="rounded-[16px] border border-[color:var(--color-line)] bg-gradient-to-b from-white to-[color:var(--color-surface)] p-8 text-center shadow-sm hover:border-slate-300 transition-colors">
-                <div className="font-display text-[clamp(34px,4.4vw,46px)] font-extrabold tracking-[-0.03em] text-[color:var(--color-ink)]">{m.node}</div>
-                <div className="mt-1.5 text-[12px] font-bold text-[color:var(--color-muted)] uppercase tracking-wider">{m.label}</div>
-              </div>
+              <motion.div
+                whileHover={{ y: -4, boxShadow: "0 8px 24px rgba(37,99,235,.10)" }}
+                transition={{ duration: 0.2 }}
+                className="rounded-[16px] border border-[color:var(--color-line)] bg-gradient-to-b from-white to-[color:var(--color-surface)] p-6 text-center shadow-sm"
+              >
+                <div className="font-display text-[clamp(28px,4vw,42px)] font-extrabold tracking-[-0.03em] text-[color:var(--color-primary)]">{m.node}</div>
+                <div className="mt-1.5 text-[11px] font-bold text-[color:var(--color-muted)] uppercase tracking-wider">{m.label}</div>
+              </motion.div>
             </StaggerItem>
           ))}
         </Stagger>
@@ -64,13 +68,23 @@ export function Platforms() {
             <p className="lead mx-auto mt-3.5 text-[color:var(--color-muted)]">Real engagement across the platforms your audience actually uses — with safe, drip-fed delivery.</p>
           </div>
         </Reveal>
-        <Stagger className="grid grid-cols-4 gap-4 sm:grid-cols-4 lg:grid-cols-8" stagger={0.04}>
+        <Stagger className="grid grid-cols-4 gap-3 sm:grid-cols-4 lg:grid-cols-8" stagger={0.045}>
           {PLATFORMS.map((p) => (
             <StaggerItem key={p.name}>
-              <div className="group flex flex-col items-center gap-2.5 rounded-[16px] border border-[color:var(--color-line)] bg-white px-3 py-5 transition-all hover:-translate-y-1.5 hover:border-slate-300 hover:shadow-md cursor-default">
-                <span className="transition-transform duration-300 group-hover:scale-110">{p.icon}</span>
-                <span className="text-[12px] font-bold text-[color:var(--color-ink)] text-center leading-tight">{p.name}</span>
-              </div>
+              <motion.div
+                whileHover={{ y: -5, scale: 1.04 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: "spring", stiffness: 340, damping: 18 }}
+                className="flex flex-col items-center gap-2 rounded-[14px] border border-[color:var(--color-line)] bg-white px-2 py-4 shadow-sm cursor-default select-none"
+              >
+                <motion.span
+                  initial={{ scale: 0.7, opacity: 0 }}
+                  whileInView={{ scale: 1, opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ type: "spring", stiffness: 280, damping: 16, delay: 0.05 }}
+                >{p.icon}</motion.span>
+                <span className="text-[11px] font-bold text-[color:var(--color-ink)] text-center leading-tight">{p.name}</span>
+              </motion.div>
             </StaggerItem>
           ))}
         </Stagger>
@@ -99,14 +113,22 @@ export function WhyUs() {
             <p className="lead mx-auto mt-3.5 text-[color:var(--color-muted)]">Most SMM panels run on a single source. Kriyava routes every order across multiple vetted providers — so you get speed, retention and uptime they can&apos;t match.</p>
           </div>
         </Reveal>
-        <Stagger className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {feats.map((f) => (
-            <StaggerItem key={f.t}>
-              <article className="h-full rounded-[16px] border border-[color:var(--color-line)] bg-white p-8 transition-all hover:-translate-y-1.5 hover:border-slate-300 hover:shadow-2xl text-left">
-                <div className={`mb-[18px] grid h-[50px] w-[50px] place-items-center rounded-[14px] text-white ${f.tint}`}><f.icon size={24} /></div>
-                <h3 className="text-[19px] font-bold text-[color:var(--color-ink)]">{f.t}</h3>
-                <p className="mt-2 text-[14.5px] text-[color:var(--color-muted)] font-medium">{f.d}</p>
-              </article>
+        <Stagger className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3" stagger={0.06}>
+          {feats.map((f, i) => (
+            <StaggerItem key={f.t} slideFrom={i % 2 === 0 ? "left" : "right"}>
+              <motion.article
+                whileHover={{ y: -6, boxShadow: "0 20px 48px rgba(15,23,42,.12)" }}
+                transition={{ duration: 0.22 }}
+                className="h-full rounded-[16px] border border-[color:var(--color-line)] bg-white p-7 text-left cursor-default"
+              >
+                <motion.div
+                  whileHover={{ rotate: [0, -8, 8, 0], scale: 1.1 }}
+                  transition={{ duration: 0.4 }}
+                  className={`mb-4 grid h-[48px] w-[48px] place-items-center rounded-[14px] text-white ${f.tint}`}
+                ><f.icon size={22} /></motion.div>
+                <h3 className="text-[18px] font-bold text-[color:var(--color-ink)]">{f.t}</h3>
+                <p className="mt-2 text-[14px] text-[color:var(--color-muted)] font-medium">{f.d}</p>
+              </motion.article>
             </StaggerItem>
           ))}
         </Stagger>
@@ -267,49 +289,111 @@ export function HowItWorks() {
   );
 }
 
+/* ── Typewriter hook ── */
+const CODE_SNIPPET = `// Auto-routes EasySMM → LuvSMM → FineSMM
+const res = await fetch(
+  "https://kriyava-api-82kg9.ondigitalocean.app/api",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer YOUR_API_KEY"
+    },
+    body: JSON.stringify({
+      action: "add",
+      service: "easy:641",
+      link: "https://instagram.com/yourbrand",
+      quantity: 1000
+    })
+  }
+);
+// → { "order": "...", "provider": "EasySMM" }`;
+
+function TypewriterCode() {
+  const [text, setText] = useState("");
+  const [started, setStarted] = useState(false);
+  const ref = useRef<HTMLPreElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { setText(CODE_SNIPPET); return; }
+    const io = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting && !started) setStarted(true); },
+      { threshold: 0.4 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!started) return;
+    let i = 0;
+    // Small delay before starting
+    const timeout = setTimeout(() => {
+      const id = setInterval(() => {
+        i++;
+        setText(CODE_SNIPPET.slice(0, i));
+        if (i >= CODE_SNIPPET.length) clearInterval(id);
+      }, 14);
+      return () => clearInterval(id);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [started]);
+
+  // Show cursor while typing
+  const done = text.length >= CODE_SNIPPET.length;
+  return (
+    <pre ref={ref} className="overflow-auto p-5 font-mono text-[12px] leading-[1.8] text-[#e2e8f0] min-h-[220px]">
+      {text}
+      {!done && <span className="inline-block w-[2px] h-[14px] bg-[#7dd3fc] ml-[1px] animate-pulse align-middle" />}
+    </pre>
+  );
+}
+
 /* ---------------- API section ---------------- */
 export function ApiSection() {
-  const feats = ["REST API", "Bulk orders", "Webhooks", "Order tracking", "White label", "Multi-provider failover"];
+  const feats = ["REST API", "Bulk orders", "Order tracking", "White label", "Multi-provider failover", "Webhooks (soon)"];
   return (
     <section id="api" className="section-pad">
       <div className="container-x">
         <Reveal>
-          <div className="relative overflow-hidden rounded-[24px] p-[clamp(40px,5vw,72px)] text-white" style={{ background: "radial-gradient(120% 120% at 0% 0%,#0b1220 0%,#0f172a 45%,#111c3a 100%)" }}>
-            <div className="relative z-1 grid items-center gap-16 lg:grid-cols-2">
-              <div>
+          <div className="relative overflow-hidden rounded-[24px] p-[clamp(32px,5vw,64px)] text-white" style={{ background: "radial-gradient(120% 120% at 0% 0%,#0b1220 0%,#0f172a 45%,#111c3a 100%)" }}>
+            <div className="relative z-1 grid items-center gap-12 lg:grid-cols-2">
+              {/* Left */}
+              <SlideIn direction="left">
                 <span className="eyebrow" style={{ color: "#7dd3fc" }}>API for resellers</span>
-                <h2 className="mt-3.5 text-[clamp(28px,3.6vw,40px)] font-extrabold text-white">Build your own SMM empire on our rails</h2>
+                <h2 className="mt-3.5 text-[clamp(26px,3.6vw,38px)] font-extrabold text-white">Build your own SMM empire on our rails</h2>
                 <p className="lead mt-3.5" style={{ color: "#94a3b8" }}>One clean REST API, multiple providers behind it. Automate orders, sync status, and white-label everything under your brand.</p>
-                <div className="my-7 grid grid-cols-2 gap-3.5">
-                  {feats.map((f) => (
-                    <div key={f} className="flex items-center gap-[11px] text-[14.5px] font-semibold text-[#cbd5e1]">
-                      <span className="grid h-6 w-6 place-items-center rounded-lg bg-[rgba(16,185,129,.16)]"><Check size={14} color="#34d399" /></span>{f}
-                    </div>
+                <div className="my-6 grid grid-cols-2 gap-3">
+                  {feats.map((f, i) => (
+                    <motion.div key={f}
+                      initial={{ opacity: 0, x: -12 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.07, duration: 0.38 }}
+                      className="flex items-center gap-2.5 text-[13.5px] font-semibold text-[#cbd5e1]">
+                      <span className="grid h-5 w-5 shrink-0 place-items-center rounded-md bg-[rgba(16,185,129,.16)]"><Check size={12} color="#34d399" /></span>{f}
+                    </motion.div>
                   ))}
                 </div>
-                <Link href="/login?redirect=/api-docs" className="btn btn-cta btn-lg">View API Docs →</Link>
-              </div>
-              <div className="overflow-hidden rounded-[16px] border border-[rgba(148,163,184,.18)] bg-[#0a0f1f] shadow-[0_30px_70px_rgba(0,0,0,.45)]">
-                <div className="flex items-center gap-[7px] border-b border-[rgba(148,163,184,.15)] px-4 py-3.5">
-                  <i className="h-[11px] w-[11px] rounded-full bg-[#ff5f57]" /><i className="h-[11px] w-[11px] rounded-full bg-[#febc2e]" /><i className="h-[11px] w-[11px] rounded-full bg-[#28c840]" />
-                  <span className="ml-2.5 font-mono text-[12px] text-[#64748b]">POST /api/v2 — place order</span>
+                <Link href="/login?redirect=/api-docs" className="btn btn-cta !px-6 !py-3 !text-sm">View API Docs →</Link>
+              </SlideIn>
+
+              {/* Right — animated code block */}
+              <SlideIn direction="right">
+                <div className="overflow-hidden rounded-[16px] border border-[rgba(148,163,184,.18)] bg-[#0a0f1f] shadow-[0_24px_60px_rgba(0,0,0,.5)]">
+                  <div className="flex items-center gap-[7px] border-b border-[rgba(148,163,184,.15)] px-4 py-3">
+                    <i className="h-[10px] w-[10px] rounded-full bg-[#ff5f57]" />
+                    <i className="h-[10px] w-[10px] rounded-full bg-[#febc2e]" />
+                    <i className="h-[10px] w-[10px] rounded-full bg-[#28c840]" />
+                    <span className="ml-2 font-mono text-[11px] text-[#64748b]">POST /api — place order</span>
+                  </div>
+                  <TypewriterCode />
                 </div>
-                <pre className="overflow-auto p-5 font-mono text-[13px] leading-[1.75] text-[#e2e8f0]">
-{`// Auto-routes LuvSMM → EasySMM
-const res = await fetch("https://api.kriyava.com/v2", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    key: "YOUR_API_KEY",
-    action: "add",
-    service: 641,
-    link: "https://instagram.com/yourbrand",
-    quantity: 1000
-  })
-});
-// → { "order": 23501, "provider": "luvsmm" }`}
-                </pre>
-              </div>
+              </SlideIn>
             </div>
           </div>
         </Reveal>
