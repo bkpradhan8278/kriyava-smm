@@ -6,7 +6,11 @@ import {
   Zap, ShieldCheck, Headphones, Lock, IndianRupee, Code2, Check, ChevronDown,
   Sparkles, Bot, User, ArrowRight,
 } from "lucide-react";
-import { Reveal, Stagger, StaggerItem } from "../Reveal";
+import { Reveal, Stagger, StaggerItem, SlideIn } from "../Reveal";
+import {
+  IconInstagram, IconYouTube, IconFacebook, IconTikTok,
+  IconTelegram, IconSpotify, IconTwitterX, IconWhatsApp,
+} from "../SocialIcon";
 import { CountUp } from "../CountUp";
 import { useHeadlineCards } from "@/lib/useServices";
 import { fmtINR } from "@/lib/account";
@@ -39,7 +43,16 @@ export function Metrics() {
 }
 
 /* ---------------- Platforms ---------------- */
-const PLATFORMS = ["Instagram", "Facebook", "YouTube", "Telegram", "TikTok", "X / Twitter", "Spotify", "Discord"];
+const PLATFORMS: Array<{ name: string; icon: React.ReactNode }> = [
+  { name: "Instagram", icon: <IconInstagram size={32} /> },
+  { name: "Facebook",  icon: <IconFacebook size={32} /> },
+  { name: "YouTube",   icon: <IconYouTube size={32} /> },
+  { name: "Telegram",  icon: <IconTelegram size={32} /> },
+  { name: "TikTok",    icon: <IconTikTok size={32} /> },
+  { name: "Twitter/X", icon: <IconTwitterX size={32} /> },
+  { name: "Spotify",   icon: <IconSpotify size={32} /> },
+  { name: "WhatsApp",  icon: <IconWhatsApp size={32} /> },
+];
 export function Platforms() {
   return (
     <section id="platforms" className="section-pad pt-0">
@@ -51,12 +64,12 @@ export function Platforms() {
             <p className="lead mx-auto mt-3.5 text-[color:var(--color-muted)]">Real engagement across the platforms your audience actually uses — with safe, drip-fed delivery.</p>
           </div>
         </Reveal>
-        <Stagger className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
+        <Stagger className="grid grid-cols-4 gap-4 sm:grid-cols-4 lg:grid-cols-8" stagger={0.04}>
           {PLATFORMS.map((p) => (
-            <StaggerItem key={p}>
-              <div className="group flex flex-col items-center gap-2.5 rounded-[16px] border border-[color:var(--color-line)] bg-white px-4 py-6 transition-all hover:-translate-y-1.5 hover:border-slate-300 hover:shadow-md hover:bg-slate-50/50">
-                <span className="grid h-12 w-12 place-items-center rounded-[13px] bg-[color:var(--color-surface)] text-2xl transition-transform group-hover:scale-110">{emoji(p)}</span>
-                <span className="text-[13.5px] font-bold text-[color:var(--color-ink)]">{p}</span>
+            <StaggerItem key={p.name}>
+              <div className="group flex flex-col items-center gap-2.5 rounded-[16px] border border-[color:var(--color-line)] bg-white px-3 py-5 transition-all hover:-translate-y-1.5 hover:border-slate-300 hover:shadow-md cursor-default">
+                <span className="transition-transform duration-300 group-hover:scale-110">{p.icon}</span>
+                <span className="text-[12px] font-bold text-[color:var(--color-ink)] text-center leading-tight">{p.name}</span>
               </div>
             </StaggerItem>
           ))}
@@ -64,10 +77,6 @@ export function Platforms() {
       </div>
     </section>
   );
-}
-function emoji(p: string) {
-  const m: Record<string, string> = { Instagram: "📸", Facebook: "👍", YouTube: "▶️", Telegram: "✈️", TikTok: "🎵", "X / Twitter": "𝕏", Spotify: "🎧", Discord: "🎮" };
-  return m[p] || "🌐";
 }
 
 /* ---------------- Why choose us ---------------- */
@@ -116,35 +125,37 @@ export function ServicesPreview() {
           <div className="mx-auto mb-12 max-w-[720px] text-center">
             <span className="eyebrow">Services</span>
             <h2 className="h-sec mt-3 text-[color:var(--color-ink)]">Popular services, live prices</h2>
-            <p className="lead mx-auto mt-3.5 text-[color:var(--color-muted)]">Real starting rates per 1,000 — pulled from our provider network. Every service shows delivery speed and a retention score.</p>
+            <p className="lead mx-auto mt-3.5 text-[color:var(--color-muted)]">Real starting rates per 1,000 — pulled from our provider network every 30 minutes.</p>
           </div>
         </Reveal>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <Stagger className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3" stagger={0.06}>
           {cards.length === 0
             ? Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-[340px] animate-pulse rounded-[16px] border border-[color:var(--color-line)] bg-slate-50/50" />
+                <div key={i} className="h-[300px] animate-pulse rounded-[16px] border border-[color:var(--color-line)] bg-slate-50/50" />
               ))
             : cards.slice(0, 6).map((c) => (
-                <article key={c.label} className="flex flex-col rounded-[16px] border border-[color:var(--color-line)] bg-white p-8 transition-all hover:-translate-y-1.5 hover:border-slate-300 hover:shadow-2xl text-left">
-                  <div className="mb-[18px] flex items-center gap-3.5 border-b border-[color:var(--color-line-soft)] pb-4">
-                    <span className="grid h-[46px] w-[46px] place-items-center rounded-[12px] icontint-blue text-xl text-white">{platIcon(c.label)}</span>
-                    <b className="font-display text-[16px] font-extrabold text-[color:var(--color-ink)]">{c.label}</b>
-                  </div>
-                  <div className="mb-1 flex items-baseline gap-1.5 mt-2">
-                    <span className="text-[12px] font-bold text-[color:var(--color-muted)]">from</span>
-                    <span className="font-display text-[30px] font-extrabold text-[color:var(--color-primary)]">{fmtINR(c.retail_inr)}</span>
-                    <span className="text-[13px] font-bold text-[color:var(--color-muted)]">/ 1K</span>
-                  </div>
-                  <div className="my-[18px] flex flex-col gap-2.5 border-y border-[color:var(--color-line-soft)] py-4 text-[13.5px]">
-                    <Row label="Speed" value={<b className="font-bold text-[color:var(--color-ink)]">{c.speed}</b>} />
-                    <Row label="Retention" value={<Dots q={c.quality} />} />
-                    <Row label="Refill" value={<b className="font-bold" style={{ color: /lifetime|days|365/i.test(c.refill) ? "var(--color-success)" : "var(--color-ink)" }}>{c.refill}</b>} />
-                  </div>
-                  <Link href="/login" className="btn btn-primary btn-block mt-auto !py-2.5 !text-xs rounded-xl shadow-md">Order now</Link>
-                </article>
+                <StaggerItem key={c.label}>
+                  <article className="flex flex-col h-full rounded-[16px] border border-[color:var(--color-line)] bg-white p-6 transition-all hover:-translate-y-1.5 hover:border-slate-300 hover:shadow-2xl text-left">
+                    <div className="mb-4 flex items-center gap-3 border-b border-[color:var(--color-line-soft)] pb-4">
+                      <span className="shrink-0">{platIconNode(c.label, 40)}</span>
+                      <b className="font-display text-[15px] font-extrabold text-[color:var(--color-ink)] leading-tight">{c.label}</b>
+                    </div>
+                    <div className="mb-1 flex items-baseline gap-1.5">
+                      <span className="text-[12px] font-bold text-[color:var(--color-muted)]">from</span>
+                      <span className="font-display text-[28px] font-extrabold text-[color:var(--color-primary)]">{fmtINR(c.retail_inr)}</span>
+                      <span className="text-[13px] font-bold text-[color:var(--color-muted)]">/ 1K</span>
+                    </div>
+                    <div className="my-4 flex flex-col gap-2 border-y border-[color:var(--color-line-soft)] py-4 text-[13px]">
+                      <Row label="Speed" value={<b className="font-bold text-[color:var(--color-ink)]">{c.speed}</b>} />
+                      <Row label="Retention" value={<Dots q={c.quality} />} />
+                      <Row label="Refill" value={<b className="font-bold" style={{ color: /lifetime|days|365/i.test(c.refill) ? "var(--color-success)" : "var(--color-ink)" }}>{c.refill}</b>} />
+                    </div>
+                    <Link href="/login" className="btn btn-primary btn-block mt-auto !py-2.5 !text-xs rounded-xl">Order now</Link>
+                  </article>
+                </StaggerItem>
               ))}
-        </div>
-        <div className="mt-12 text-center">
+        </Stagger>
+        <div className="mt-10 text-center">
           <Link href="/login?redirect=/services" className="btn !px-6 !py-3 !text-sm rounded-xl bg-white border border-[color:var(--color-line)] text-[color:var(--color-ink)] hover:bg-[color:var(--color-surface)] hover:border-slate-300 transition-all hover:-translate-y-0.5 inline-flex items-center gap-2">
             Browse all services <ArrowRight size={15} />
           </Link>
@@ -170,22 +181,26 @@ function Dots({ q }: { q: number }) {
     </span>
   );
 }
-function platIcon(label: string) {
+function platIconNode(label: string, size = 40) {
   const l = label.toLowerCase();
-  if (l.includes("instagram")) return "📸";
-  if (l.includes("youtube")) return "▶️";
-  if (l.includes("telegram")) return "✈️";
-  if (l.includes("tiktok")) return "🎵";
-  return "🌐";
+  if (l.includes("instagram")) return <IconInstagram size={size} />;
+  if (l.includes("youtube"))   return <IconYouTube size={size} />;
+  if (l.includes("telegram"))  return <IconTelegram size={size} />;
+  if (l.includes("tiktok"))    return <IconTikTok size={size} />;
+  if (l.includes("facebook"))  return <IconFacebook size={size} />;
+  if (l.includes("whatsapp"))  return <IconWhatsApp size={size} />;
+  if (l.includes("spotify"))   return <IconSpotify size={size} />;
+  if (l.includes("twitter") || l.includes(" x")) return <IconTwitterX size={size} />;
+  return <span className="text-2xl">⚡</span>;
 }
 
-/* ---------------- How it works (images) ---------------- */
+/* ---------------- How it works ---------------- */
 export function HowItWorks() {
   const steps = [
-    { n: "01", img: "step-1-account", t: "Create account", d: "Sign up free in under 30 seconds — no card required." },
-    { n: "02", img: "step-2-wallet", t: "Add funds", d: "Top up via Razorpay, UPI or cards. Funds are credited after secure verification." },
-    { n: "03", img: "step-3-service", t: "Select service", d: "Pick a platform, paste your link, set quantity — or let AI do it." },
-    { n: "04", img: "step-4-growth", t: "Watch growth", d: "Track delivery live on your dashboard and on WhatsApp." },
+    { n: "01", img: "step-1-account", t: "Create account",  d: "Sign up free in 30 seconds — no card required.", color: "from-blue-600 to-cyan-500" },
+    { n: "02", img: "step-2-wallet",  t: "Add funds",        d: "Top up via UPI, cards or netbanking. Instant wallet credit.", color: "from-violet-600 to-blue-500" },
+    { n: "03", img: "step-3-service", t: "Select service",   d: "Pick a platform, paste your link, set quantity — or let the AI do it.", color: "from-pink-600 to-rose-500" },
+    { n: "04", img: "step-4-growth",  t: "Watch growth",     d: "Track delivery live on your dashboard and get status updates.", color: "from-emerald-500 to-teal-400" },
   ];
   return (
     <section id="how" className="section-pad bg-[color:var(--color-surface)] border-y border-[color:var(--color-line)]">
@@ -197,19 +212,52 @@ export function HowItWorks() {
             <p className="lead mx-auto mt-3.5 text-[color:var(--color-muted)]">No contracts, no learning curve. Four steps and your numbers start moving.</p>
           </div>
         </Reveal>
-        <Stagger className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+
+        {/* ── MOBILE: vertical timeline (< sm) ── */}
+        <div className="relative sm:hidden">
+          {/* Vertical connector line */}
+          <div className="absolute left-[19px] top-10 bottom-8 w-[2px] bg-gradient-to-b from-blue-200 via-violet-200 to-emerald-200" />
+
+          <div className="flex flex-col gap-8">
+            {steps.map((s, idx) => (
+              <SlideIn key={s.n} direction="left" delay={0} className="relative pl-12">
+                {/* Step badge on the timeline */}
+                <span className={`absolute left-0 top-3 z-10 grid h-[38px] w-[38px] place-items-center rounded-[11px] bg-gradient-to-br ${s.color} font-display text-[14px] font-extrabold text-white shadow-md`}>{s.n}</span>
+
+                <div className="rounded-[16px] border border-[color:var(--color-line)] bg-white overflow-hidden shadow-sm">
+                  {/* Image strip */}
+                  <div className="relative h-[140px] overflow-hidden"
+                    style={{ background: "linear-gradient(150deg,#eaf2ff 0%,#f5f9ff 45%,#ecfdf7 100%)" }}>
+                    <Image src={`/assets/${s.img}.png`} alt={s.t} fill className="object-contain p-4 pointer-events-none" sizes="100vw" />
+                  </div>
+                  {/* Text */}
+                  <div className="p-4">
+                    <h3 className="text-[17px] font-bold text-[color:var(--color-ink)]">{s.t}</h3>
+                    <p className="mt-1 text-[13px] text-[color:var(--color-muted)] font-medium leading-relaxed">{s.d}</p>
+                  </div>
+                </div>
+
+                {/* Connector dot between cards (not last) */}
+                {idx < steps.length - 1 && (
+                  <div className="absolute -bottom-4 left-[18px] h-2 w-2 rounded-full bg-slate-300" />
+                )}
+              </SlideIn>
+            ))}
+          </div>
+        </div>
+
+        {/* ── DESKTOP: 4-col grid (sm+) ── */}
+        <Stagger className="hidden sm:grid grid-cols-2 gap-5 lg:grid-cols-4" stagger={0.07}>
           {steps.map((s) => (
             <StaggerItem key={s.n}>
-              <article className="group relative overflow-hidden rounded-[16px] border border-[color:var(--color-line)] bg-white p-6 text-center transition-all hover:-translate-y-2 hover:shadow-2xl hover:border-slate-300">
-                <span className="absolute left-4 top-3.5 z-2 grid h-[30px] w-[30px] place-items-center rounded-[9px] bg-gradient-to-br from-blue-600 to-cyan-500 font-display text-[13px] font-extrabold text-white shadow-[var(--shadow-glow)]">{s.n}</span>
-                <div
-                  className="relative mb-[18px] aspect-square w-full overflow-hidden rounded-[14px] border border-[color:var(--color-line)] shadow-inner"
-                  style={{ background: "linear-gradient(150deg,#eaf2ff 0%,#f5f9ff 45%,#ecfdf7 100%)" }}
-                >
-                  <Image src={`/assets/${s.img}.png`} alt={s.t} fill className="object-contain p-2 transition-transform duration-500 group-hover:scale-[1.06] pointer-events-none" sizes="(max-width:768px) 100vw, 25vw" />
+              <article className="group relative overflow-hidden rounded-[16px] border border-[color:var(--color-line)] bg-white p-5 text-center transition-all hover:-translate-y-2 hover:shadow-2xl hover:border-slate-300 h-full">
+                <span className={`absolute left-4 top-3.5 z-2 grid h-[30px] w-[30px] place-items-center rounded-[9px] bg-gradient-to-br ${s.color} font-display text-[13px] font-extrabold text-white shadow-md`}>{s.n}</span>
+                <div className="relative mb-4 aspect-square w-full overflow-hidden rounded-[14px] border border-[color:var(--color-line)]"
+                  style={{ background: "linear-gradient(150deg,#eaf2ff 0%,#f5f9ff 45%,#ecfdf7 100%)" }}>
+                  <Image src={`/assets/${s.img}.png`} alt={s.t} fill className="object-contain p-2 transition-transform duration-500 group-hover:scale-[1.06] pointer-events-none" sizes="25vw" />
                 </div>
-                <h3 className="text-[18px] font-bold text-[color:var(--color-ink)]">{s.t}</h3>
-                <p className="mt-2 text-[13.5px] text-[color:var(--color-muted)] font-medium">{s.d}</p>
+                <h3 className="text-[17px] font-bold text-[color:var(--color-ink)]">{s.t}</h3>
+                <p className="mt-2 text-[13px] text-[color:var(--color-muted)] font-medium">{s.d}</p>
               </article>
             </StaggerItem>
           ))}
