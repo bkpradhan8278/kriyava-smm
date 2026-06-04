@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import type { Account } from "./types";
 import { loadAccount, ensureAccount } from "./account";
-import { api, getToken } from "./api";
+import { api, ApiError, clearToken, getToken } from "./api";
 
 function toMillis(at: string) {
   const t = new Date(at).getTime();
@@ -50,8 +50,13 @@ export function useAccount() {
       };
       localStorage.setItem("kriyava_account_v1", JSON.stringify(next));
       window.dispatchEvent(new CustomEvent("kriyava:account", { detail: next }));
-    } catch {
-      // AuthGuard redirects expired sessions; keep the last cache visible briefly.
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        // Expired or revoked token — clear it so AuthGuard redirects to login on next navigation.
+        clearToken();
+        localStorage.removeItem("kriyava_account_v1");
+      }
+      // Other errors (network, server): keep last known state visible; don't redirect.
     }
   }, []);
 

@@ -70,8 +70,8 @@ function LoginContent() {
     setLoading(true);
     try {
       const g = await signInWithGoogle(); // opens Google popup
-      const res = await api.social(g.email, g.name, refCode || undefined); // real backend account
-      setToken(res.token);
+      const res = await api.social(g.idToken, refCode || undefined); // backend verifies idToken
+      setToken(res.token, true); // Google auth always persists (no "remember me" prompt)
       hydrateFromApi(res.user, g.photoURL);
       // Save for one-tap on next visit
       localStorage.setItem(LAST_GOOGLE_KEY, JSON.stringify({ name: g.name, email: g.email, photoURL: g.photoURL }));
@@ -106,7 +106,7 @@ function LoginContent() {
         mode === "up"
           ? await api.register(email.trim(), name.trim(), password, refCode || undefined)
           : await api.login(email.trim(), password);
-      setToken(res.token);
+      setToken(res.token, remember);
       hydrateFromApi(res.user);
       router.push("/dashboard");
     } catch (err) {

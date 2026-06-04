@@ -14,13 +14,22 @@ function isBrowser() {
 
 export function getToken(): string | null {
   if (!isBrowser()) return null;
-  return localStorage.getItem(TOKEN_KEY);
+  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
 }
-export function setToken(t: string) {
-  if (isBrowser()) localStorage.setItem(TOKEN_KEY, t);
+export function setToken(t: string, remember = true) {
+  if (!isBrowser()) return;
+  if (remember) {
+    localStorage.setItem(TOKEN_KEY, t);
+    sessionStorage.removeItem(TOKEN_KEY);
+  } else {
+    sessionStorage.setItem(TOKEN_KEY, t);
+    localStorage.removeItem(TOKEN_KEY);
+  }
 }
 export function clearToken() {
-  if (isBrowser()) localStorage.removeItem(TOKEN_KEY);
+  if (!isBrowser()) return;
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
 }
 
 export class ApiError extends Error {
@@ -47,10 +56,18 @@ async function request<T>(
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
+  let data: unknown = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new ApiError(`Request failed (${res.status})`, res.status);
+    }
+  }
   if (!res.ok) {
-    const msg = data?.message || data?.error || `Request failed (${res.status})`;
-    throw new ApiError(Array.isArray(msg) ? msg.join(", ") : msg, res.status);
+    const d = data as Record<string, unknown> | null;
+    const msg = d?.message || d?.error || `Request failed (${res.status})`;
+    throw new ApiError(Array.isArray(msg) ? msg.join(", ") : String(msg), res.status);
   }
   return data as T;
 }
@@ -120,10 +137,10 @@ export const api = {
       body: { email, password },
       auth: false,
     }),
-  social: (email: string, name: string, referralCode?: string) =>
+  social: (idToken: string, referralCode?: string) =>
     request<{ token: string; user: ApiUser }>("/auth/social", {
       method: "POST",
-      body: { email, name, referralCode },
+      body: { idToken, referralCode },
       auth: false,
     }),
   me: () => request<ApiUser>("/auth/me"),

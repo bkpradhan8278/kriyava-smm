@@ -7,10 +7,9 @@ import { RefreshCw } from "lucide-react";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  // Show content immediately if we already have a token + cached account.
-  // api.me() still runs in background to refresh data; only blocks if no token at all.
-  const initialOk = typeof window !== "undefined" && !!getToken() && !!loadAccount()?.email;
-  const [status, setStatus] = useState<"loading" | "ok" | "redirect">(initialOk ? "ok" : "loading");
+  // Always validate the token with the server before rendering protected content.
+  // This prevents stale/expired tokens from briefly showing the dashboard.
+  const [status, setStatus] = useState<"loading" | "ok" | "redirect">("loading");
 
   useEffect(() => {
     if (!getToken()) {
@@ -44,7 +43,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   if (status === "redirect") return null;
-  // While validating but we have cached data — render children immediately (no spinner)
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-[#090D16] text-white flex items-center justify-center">

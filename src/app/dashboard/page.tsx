@@ -488,7 +488,7 @@ export default function DashboardPage() {
                 ) : (
                   quickPicks.map((s) => (
                     <option key={s.id} value={s.id} className="bg-[#090D16] text-white">
-                      {s.name.slice(0, 36)}... — {fmtINR(s.price)}/1K
+                      {s.name.length > 36 ? s.name.slice(0, 36) + "…" : s.name} — {fmtINR(s.price)}/1K
                     </option>
                   ))
                 )}

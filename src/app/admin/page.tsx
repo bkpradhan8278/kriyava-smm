@@ -249,7 +249,8 @@ export default function AdminPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {Object.entries(data.providerStatus.balances).map(([name, bal]) => {
                     const [amt, cur] = bal.split(" ");
-                    const low = parseFloat(amt) < 5;
+                    const parsed = parseFloat(amt);
+                    const low = Number.isNaN(parsed) || parsed < 5;
                     return (
                       <div key={name} className={`rounded-xl border p-4 ${low ? "border-rose-500/30 bg-rose-500/5" : "border-emerald-500/20 bg-emerald-500/5"}`}>
                         <div className="flex items-center justify-between mb-2">
