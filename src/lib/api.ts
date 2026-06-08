@@ -190,6 +190,8 @@ export const api = {
       method: "POST", body: { email, amount, note },
     }),
   adminReferrals: () => request<AdminReferralResponse>("/admin/referrals"),
+  adminRefreshProviders: () =>
+    request<{ ok: boolean; providerStatus: AdminSummaryResponse["providerStatus"] }>("/admin/providers/refresh", { method: "POST" }),
 };
 
 export interface AdminOrderRow {

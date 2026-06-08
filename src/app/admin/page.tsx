@@ -121,6 +121,9 @@ export default function AdminPage() {
   const [orderFilter, setOrderFilter] = useState("All");
   const [refreshing, setRefreshing] = useState(false);
 
+  const [providerRefreshing, setProviderRefreshing] = useState(false);
+  const [providerMsg, setProviderMsg] = useState("");
+
   // Manual fund add state
   const [fundEmail, setFundEmail] = useState("");
   const [fundAmount, setFundAmountStr] = useState("100");
@@ -146,6 +149,16 @@ export default function AdminPage() {
   };
 
   const handleRefresh = async () => { setRefreshing(true); await fetchData(); setRefreshing(false); };
+
+  const handleProviderRefresh = async () => {
+    setProviderRefreshing(true); setProviderMsg("");
+    try {
+      const res = await api.adminRefreshProviders();
+      setData((prev) => prev ? { ...prev, providerStatus: res.providerStatus } : prev);
+      setProviderMsg("✅ Balances refreshed from all providers");
+    } catch (e) { setProviderMsg("❌ " + (e instanceof Error ? e.message : "Refresh failed")); }
+    finally { setProviderRefreshing(false); }
+  };
 
   const handleAddFunds = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -405,7 +418,18 @@ export default function AdminPage() {
           {/* ── PROVIDERS ── */}
           {tab === "providers" && (
             <div className="space-y-4">
-              <h3 className="text-sm font-black text-white">Provider Management</h3>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-black text-white">Provider Management</h3>
+                <button
+                  onClick={() => void handleProviderRefresh()}
+                  disabled={providerRefreshing}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-400 text-[11px] font-bold hover:bg-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw size={11} className={providerRefreshing ? "animate-spin" : ""} />
+                  {providerRefreshing ? "Refreshing…" : "Refresh Balances"}
+                </button>
+              </div>
+              {providerMsg && <div className="text-[11px] font-bold text-slate-300 bg-white/5 rounded-lg px-3 py-2">{providerMsg}</div>}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {Object.entries(data.providerStatus.balances).map(([name, bal]) => {
                   const [amt, cur] = bal.split(" ");
