@@ -51,7 +51,7 @@ export interface Order {
   qty: number;
   link: string;
   charge: number;
-  status: "Processing" | "In progress" | "Partial" | "Completed" | "Canceled" | "Pending";
+  status: "Processing" | "In progress" | "Partial" | "Completed" | "Canceled" | "Pending" | "Failed";
   at: number;
   provider?: string;
 }
