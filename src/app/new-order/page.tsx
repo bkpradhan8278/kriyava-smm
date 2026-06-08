@@ -11,13 +11,13 @@ import { SocialIcon, platformIconFor } from "@/components/SocialIcon";
 import type { MarketService } from "@/lib/types";
 
 // Short numeric ID from "easy:641" → "641"
-function shortId(id: string) { return id.split(":").pop() || id; }
-// Badge color by provider
+function shortId(id: string) { return (id.split(":").pop() || id).toUpperCase(); }
+// Badge color — stable hash of the id so each service keeps a consistent color.
 function badgeColor(id: string) {
-  if (id.startsWith("easy:")) return "bg-blue-600 text-white";
-  if (id.startsWith("luv:"))  return "bg-rose-600 text-white";
-  if (id.startsWith("fine:")) return "bg-emerald-600 text-white";
-  return "bg-slate-600 text-white";
+  const palette = ["bg-blue-600", "bg-rose-600", "bg-emerald-600", "bg-purple-600", "bg-amber-600", "bg-cyan-600"];
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return `${palette[h % palette.length]} text-white`;
 }
 
 export default function NewOrderPage() {
@@ -104,7 +104,7 @@ export default function NewOrderPage() {
     setPlacing(true);
     try {
       const order = await api.createOrder(activeService.id, qty, link);
-      setRouteMsg(`✅ Routed via ${order.provider} — #${order.id.slice(-8)}`);
+      setRouteMsg(`✅ Order confirmed — #${order.id.slice(-8)}`);
       await sync();
       showToast(`✅ Order placed! ${fmtINR(charge)} deducted.`);
       setLink("");
@@ -228,9 +228,11 @@ export default function NewOrderPage() {
                         {s.refill === "Refill available" && <span className="text-blue-400">· ♻</span>}
                       </div>
                     </div>
-                    <span className="shrink-0 text-[9px] font-black text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded mt-0.5">
-                      +{s.margin_pct}%
-                    </span>
+                    {s.refill === "Refill available" && (
+                      <span className="shrink-0 text-[9px] font-black text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded mt-0.5">
+                        ♻
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -251,7 +253,7 @@ export default function NewOrderPage() {
                 </p>
               )}
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
-                {[["Speed",activeService.speed],["Refill",activeService.refill],["Min",`${(activeService.min||1).toLocaleString()}`],["Max",activeService.max?activeService.max.toLocaleString():"∞"],["Rate/1K",fmtINR(activeService.price)],["Margin",`${activeService.margin_pct}%`]].map(([l,v])=>(
+                {[["Speed",activeService.speed],["Refill",activeService.refill],["Min",`${(activeService.min||1).toLocaleString()}`],["Max",activeService.max?activeService.max.toLocaleString():"∞"],["Rate/1K",fmtINR(activeService.price)],["Quality",`${activeService.quality}/5 ★`]].map(([l,v])=>(
                   <div key={l} className="flex justify-between border-b border-white/5 pb-1">
                     <span className="text-slate-500 font-bold">{l}</span>
                     <span className="text-white font-bold">{v}</span>
@@ -317,7 +319,7 @@ export default function NewOrderPage() {
                   {l:"Platform",v:<span className="flex items-center gap-1"><SocialIcon platform={activeService.platform} size={13}/>{activeService.platform}</span>},
                   {l:"Rate / 1K",v:<span className="text-emerald-400 font-black">{fmtINR(activeService.price)}</span>},
                   {l:"Quantity",v:qty.toLocaleString()},
-                  {l:"Your Margin",v:`${activeService.margin_pct}%`},
+                  {l:"Delivery",v:activeService.speed},
                 ].map((r)=>(
                   <div key={r.l} className="flex items-center justify-between border-b border-white/5 pb-2">
                     <span className="text-slate-400 font-bold">{r.l}</span>

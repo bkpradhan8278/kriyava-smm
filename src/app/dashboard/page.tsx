@@ -14,15 +14,16 @@ import { useMarket } from "@/lib/useServices";
 import { fmtINR } from "@/lib/account";
 import { api } from "@/lib/api";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { SocialIcon } from "@/components/SocialIcon";
 
 // Static categories configuration
 const POPULAR_CATEGORIES = [
-  { platform: "Instagram", icon: "📸", color: "from-pink-600 to-rose-500" },
-  { platform: "YouTube", icon: "🎥", color: "from-red-600 to-rose-600" },
-  { platform: "TikTok", icon: "🎵", color: "from-purple-600 to-indigo-500" },
-  { platform: "Telegram", icon: "✈️", color: "from-cyan-500 to-blue-500" },
-  { platform: "Spotify", icon: "🎧", color: "from-emerald-500 to-teal-500" },
-  { platform: "Website", icon: "🌐", color: "from-amber-500 to-orange-500" },
+  { platform: "Instagram" },
+  { platform: "YouTube" },
+  { platform: "TikTok" },
+  { platform: "Telegram" },
+  { platform: "Spotify" },
+  { platform: "Website" },
 ];
 
 export default function DashboardPage() {
@@ -546,7 +547,7 @@ export default function DashboardPage() {
             ) : (
               services
                 .slice()
-                .sort((a, b) => b.margin_pct - a.margin_pct)
+                .sort((a, b) => b.quality - a.quality || a.price - b.price)
                 .slice(0, 5)
                 .map((s, i) => (
                   <div key={s.id} className="flex items-center gap-3.5 py-2 border-b border-white/5">
@@ -561,8 +562,8 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-right shrink-0">
                       <b className="text-xs text-white block">{fmtINR(s.price)}</b>
-                      <span className="text-[10px] font-black text-emerald-400 mt-0.5 block">
-                        +{s.margin_pct}% Margin
+                      <span className="text-[10px] font-black text-slate-500 mt-0.5 block uppercase tracking-wide">
+                        / 1K
                       </span>
                     </div>
                   </div>
@@ -581,9 +582,9 @@ export default function DashboardPage() {
           <div className="space-y-4 my-auto">
             {[
               { name: "Razorpay Checkout", role: "Verified wallet top-ups", status: "Enabled", color: "bg-emerald-400" },
-              { name: "Account API", role: "Auth, wallet, orders", status: "Live", color: "bg-emerald-400" },
-              { name: "Service Catalog", role: "Customer-facing services", status: `${services.length} services`, color: "bg-emerald-400" },
-              { name: "Provider Fulfillment", role: "Server-side integration", status: "Pending", color: "bg-amber-400" },
+              { name: "Developer API", role: "Auth, wallet, orders", status: "Live", color: "bg-emerald-400" },
+              { name: "Service Catalog", role: "Live marketplace services", status: `${services.length} services`, color: "bg-emerald-400" },
+              { name: "Auto Fulfillment", role: "Orders processed instantly", status: "Live", color: "bg-emerald-400" },
             ].map((p, idx) => (
               <div key={idx} className="flex items-center justify-between text-xs font-bold border-b border-white/5 pb-3 last:border-0 last:pb-0">
                 <div className="flex items-center gap-2.5">
@@ -625,8 +626,8 @@ export default function DashboardPage() {
               href={`/services?platform=${c.platform}`}
               className="flex flex-col items-center gap-3.5 p-4 rounded-xl border border-white/5 bg-white/[0.01] hover:bg-white/[0.03] hover:-translate-y-1 hover:border-blue-500/25 transition-all text-center group cursor-pointer"
             >
-              <span className={`grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-tr ${c.color} text-white font-extrabold`}>
-                <span className="text-lg">{c.icon}</span>
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-white/[0.03] border border-white/5">
+                <SocialIcon platform={c.platform} size={26} />
               </span>
               <div>
                 <div className="text-xs font-black text-white group-hover:text-blue-400 transition-colors">

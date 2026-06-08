@@ -172,8 +172,8 @@ export default function MassOrderPage() {
           <div className="bg-white/[0.01] border border-white/5 rounded-xl p-4 text-[12px] font-mono text-slate-400 space-y-1">
             <div className="text-white font-bold mb-1.5 uppercase font-sans text-[10px] tracking-wider">Line Format Syntax:</div>
             <div><b>service_id | target_link | quantity</b></div>
-            <div className="text-[11px]">Example: <span className="text-blue-400">easy:641 | https://instagram.com/myprofile | 1000</span></div>
-            <div className="text-[11px]">Example: <span className="text-blue-400">luv:1147 | https://instagram.com/reel/abc | 500</span></div>
+            <div className="text-[11px]">Example: <span className="text-blue-400">kva641 | https://instagram.com/myprofile | 1000</span></div>
+            <div className="text-[11px]">Example: <span className="text-blue-400">kvb1147 | https://instagram.com/reel/abc | 500</span></div>
           </div>
 
           {/* Service ID lookup */}

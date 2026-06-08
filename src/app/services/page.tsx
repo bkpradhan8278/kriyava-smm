@@ -110,7 +110,6 @@ function ServicesContent() {
     if (sortBy === "price-asc") return a.price - b.price;
     if (sortBy === "price-desc") return b.price - a.price;
     if (sortBy === "quality-desc") return b.quality - a.quality || a.price - b.price;
-    if (sortBy === "margin-desc") return b.margin_pct - a.margin_pct;
     return 0;
   });
 
@@ -324,7 +323,6 @@ function ServicesContent() {
               <option value="price-asc">Sort: Price Low &rarr; High</option>
               <option value="price-desc">Sort: Price High &rarr; Low</option>
               <option value="quality-desc">Sort: Best Rated first</option>
-              <option value="margin-desc">Sort: Highest Profit Margin</option>
             </select>
           </div>
 
@@ -399,9 +397,11 @@ function ServicesContent() {
                         </span>
                         <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider ml-1">/ 1K</span>
                       </div>
-                      <span className="text-[9.5px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
-                        +{s.margin_pct}% margin
-                      </span>
+                      {s.refill === "Refill available" && (
+                        <span className="text-[9.5px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                          ♻ Refill
+                        </span>
+                      )}
                     </div>
 
                     {/* Technical details grid */}

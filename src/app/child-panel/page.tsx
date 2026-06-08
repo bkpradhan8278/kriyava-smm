@@ -1,29 +1,16 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Globe, Shield, Sparkles, CheckCircle2, TrendingUp, AlertTriangle, Monitor, Sliders, Settings } from "lucide-react";
+import { Shield, Sparkles, CheckCircle2, TrendingUp, Sliders } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
-import { fmtINR, saveAccount } from "@/lib/account";
+import { api } from "@/lib/api";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
-interface ChildPanelConfig {
-  plan: "Starter" | "Pro" | "Agency";
-  domain: string;
-  brandName: string;
-  primaryColor: string;
-  active: boolean;
-}
-
 export default function ChildPanelPage() {
-  const { account, refresh } = useAccount();
-  const [purchased, setPurchased] = useState(false);
-  const [config, setConfig] = useState<ChildPanelConfig>({
-    plan: "Pro",
-    domain: "yourbrand.com",
-    brandName: "YourBrand SMM",
-    primaryColor: "#f43f5e",
-    active: false,
-  });
+  const { account } = useAccount();
+  const [requested, setRequested] = useState(false);
+  const [requestedPlan, setRequestedPlan] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
 
   // ROI Calculator state
   const [roiOrders, setRoiOrders] = useState(30);
@@ -32,59 +19,34 @@ export default function ChildPanelPage() {
 
   const [toastMsg, setToastMsg] = useState("");
 
-  // Sync state from account store
   useEffect(() => {
-    if (account.prefs?.childPanelActive) {
-      setPurchased(true);
-      setConfig({
-        plan: (account.prefs.childPanelPlan as any) || "Pro",
-        domain: (account.prefs.childPanelDomain as string) || "yourbrand.com",
-        brandName: (account.prefs.childPanelBrandName as string) || "YourBrand SMM",
-        primaryColor: (account.prefs.childPanelColor as string) || "#f43f5e",
-        active: true,
-      });
+    if (account.prefs?.childPanelRequested) {
+      setRequested(true);
+      setRequestedPlan((account.prefs.childPanelPlan as string) || "Pro");
     }
   }, [account]);
 
-  const handlePurchase = (plan: "Starter" | "Pro" | "Agency", cost: number) => {
-    if (account.balance < cost) {
-      showToast(`❌ Insufficient balance — top up ₹${(cost - account.balance).toFixed(2)} more!`);
-      return;
+  const handleRequest = async (plan: "Starter" | "Pro" | "Agency", cost: number) => {
+    setSubmitting(true);
+    try {
+      await api.createTicket(
+        `White-Label Panel Request — ${plan}`,
+        "Sales",
+        `${account.name || "A user"} (${account.email}) is interested in the ${plan} White-Label Child Panel (₹${cost}/mo). Please reach out to set it up.`,
+      );
+      setRequested(true);
+      setRequestedPlan(plan);
+      showToast(`✅ Request sent! Our team will contact you about the ${plan} plan.`);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Could not send request — try again.");
+    } finally {
+      setSubmitting(false);
     }
-
-    const a = { ...account };
-    a.balance = +((a.balance || 0) - cost).toFixed(2);
-    a.spent = +((a.spent || 0) + cost).toFixed(2);
-    a.prefs = a.prefs || {};
-    a.prefs.childPanelActive = true;
-    a.prefs.childPanelPlan = plan;
-    a.prefs.childPanelDomain = "yourbrand.com";
-    a.prefs.childPanelBrandName = "YourBrand SMM";
-    a.prefs.childPanelColor = "#f43f5e";
-
-    saveAccount(a);
-    refresh();
-    
-    setPurchased(true);
-    showToast(`👑 Congratulations! ${plan} Child Panel purchased successfully!`);
-  };
-
-  const handleSaveConfig = (e: React.FormEvent) => {
-    e.preventDefault();
-    const a = { ...account };
-    a.prefs = a.prefs || {};
-    a.prefs.childPanelDomain = config.domain;
-    a.prefs.childPanelBrandName = config.brandName;
-    a.prefs.childPanelColor = config.primaryColor;
-
-    saveAccount(a);
-    refresh();
-    showToast("💾 Configuration updated successfully!");
   };
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
-    setTimeout(() => setToastMsg(""), 3000);
+    setTimeout(() => setToastMsg(""), 3500);
   };
 
   // ROI Math
@@ -101,129 +63,23 @@ export default function ChildPanelPage() {
         <p className="text-sm text-slate-400 mt-1">Start your SMM reseller brand in under 10 minutes. 100% white-label gateway.</p>
       </div>
 
-      {purchased ? (
-        /* LIVE CONFIGURATION AREA */
-        <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1.8fr] gap-6 items-start">
-          {/* Settings Console form */}
-          <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-6 backdrop-blur-md text-left space-y-6">
-            <div className="flex items-center justify-between border-b border-white/5 pb-4">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Settings size={16} className="text-blue-400" />
-                Customize Branding
-              </h3>
-              <span className="text-[10px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded">
-                Plan: {config.plan}
-              </span>
-            </div>
-
-            <form onSubmit={handleSaveConfig} className="space-y-4 text-xs font-bold">
-              <div className="flex flex-col">
-                <label className="text-slate-400 mb-1.5 uppercase text-[10px] tracking-wide">Brand Name Title</label>
-                <input
-                  type="text"
-                  value={config.brandName}
-                  onChange={(e) => setConfig({ ...config, brandName: e.target.value })}
-                  className="rounded-xl border border-white/5 bg-white/[0.01] px-3.5 py-2.5 text-xs text-white outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div className="flex flex-col">
-                <label className="text-slate-400 mb-1.5 uppercase text-[10px] tracking-wide">Custom Domain URL</label>
-                <input
-                  type="text"
-                  value={config.domain}
-                  onChange={(e) => setConfig({ ...config, domain: e.target.value })}
-                  className="rounded-xl border border-white/5 bg-white/[0.01] px-3.5 py-2.5 text-xs text-white outline-none focus:border-blue-500 font-mono"
-                />
-              </div>
-
-              <div className="flex flex-col">
-                <label className="text-slate-400 mb-1.5 uppercase text-[10px] tracking-wide">Theme Primary Color</label>
-                <div className="flex gap-3 items-center">
-                  <input
-                    type="color"
-                    value={config.primaryColor}
-                    onChange={(e) => setConfig({ ...config, primaryColor: e.target.value })}
-                    className="h-9 w-9 rounded-xl border border-white/5 bg-transparent outline-none cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    value={config.primaryColor}
-                    onChange={(e) => setConfig({ ...config, primaryColor: e.target.value })}
-                    className="flex-1 rounded-xl border border-white/5 bg-white/[0.01] px-3.5 py-2.5 text-xs text-white font-mono outline-none"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary btn-block !py-3 !text-xs mt-4"
-              >
-                Save configurations
-              </button>
-            </form>
+      {requested ? (
+        /* REQUEST RECEIVED CONFIRMATION */
+        <div className="max-w-xl mx-auto rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-8 text-center">
+          <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-400">
+            <CheckCircle2 size={34} />
           </div>
-
-          {/* VISUAL LIVE BROWSER PREVIEW FRAME */}
-          <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-6 backdrop-blur-md text-left space-y-5">
-            <div className="flex items-center justify-between border-b border-white/5 pb-4">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Monitor size={16} className="text-emerald-400" />
-                Live White-Label Preview
-              </h3>
-            </div>
-
-            {/* Browser container mock */}
-            <div className="rounded-2xl border border-white/10 bg-white overflow-hidden text-slate-800 shadow-2xl">
-              {/* Browser topbar */}
-              <div className="flex items-center gap-4 bg-slate-100 border-b border-slate-200 px-4 py-2.5 text-xs text-slate-500 font-semibold select-none">
-                <div className="flex gap-1.5">
-                  <i className="h-2.5 w-2.5 rounded-full bg-rose-400" />
-                  <i className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                  <i className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                </div>
-                <div className="flex-1 bg-white border border-slate-200 px-3 py-1 rounded-lg flex items-center gap-1.5 font-mono text-[10.5px]">
-                  <span className="text-emerald-600 font-bold">https://</span>
-                  <b>{config.domain}</b>
-                  <span className="text-slate-400">/marketplace</span>
-                </div>
-              </div>
-
-              {/* Browser viewport body */}
-              <div className="p-5 bg-slate-50 min-h-[180px] flex flex-col text-left">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
-                  <div className="flex items-center gap-2 font-display text-sm font-extrabold text-slate-900">
-                    <span
-                      className="grid h-6 w-6 place-items-center rounded-lg text-white font-extrabold text-[11px]"
-                      style={{ backgroundColor: config.primaryColor }}
-                    >
-                      {config.brandName[0]}
-                    </span>
-                    {config.brandName}
-                  </div>
-                  <div className="flex gap-3 text-[10.5px] font-bold text-slate-500">
-                    <span>Services</span>
-                    <span>New Order</span>
-                    <span>API Docs</span>
-                  </div>
-                </div>
-
-                <div className="text-center py-4 my-auto">
-                  <h4 className="font-display font-black text-lg text-slate-900 leading-none">
-                    Wholesale Social Growth Platforms
-                  </h4>
-                  <p className="text-[11.5px] text-slate-400 mt-1.5">Premium quality followers, likes and engagement views.</p>
-                  
-                  <span
-                    className="inline-block mt-3 text-[10.5px] font-extrabold text-white px-4 py-1.5 rounded-full shadow-md select-none"
-                    style={{ backgroundColor: config.primaryColor }}
-                  >
-                    Order Services Now
-                  </span>
-                </div>
-              </div>
-            </div>
+          <h3 className="font-display text-xl font-black text-white">Request received 🎉</h3>
+          <p className="text-sm text-slate-300 mt-2">
+            Thanks for your interest in the <b className="text-emerald-400">{requestedPlan}</b> White-Label panel.
+            Our team will contact you at <b className="text-white">{account.email}</b> within 24 hours to set up your branded reseller panel.
+          </p>
+          <div className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] p-4 text-left text-xs text-slate-400 space-y-2">
+            <div className="flex items-center gap-2"><Shield size={13} className="text-blue-400" /> Custom domain + SSL, your logo & colors</div>
+            <div className="flex items-center gap-2"><TrendingUp size={13} className="text-emerald-400" /> Wholesale pricing — keep 100% of your markup</div>
+            <div className="flex items-center gap-2"><Sparkles size={13} className="text-purple-400" /> Full REST API for automation</div>
           </div>
+          <Link href="/tickets" className="btn btn-ghost !text-xs mt-5 inline-flex">View my requests in Tickets →</Link>
         </div>
       ) : (
         /* PURCHASE UP-SELL WITH PLANS AND ROI CALCULATORS */
@@ -400,10 +256,11 @@ export default function ChildPanelPage() {
                 </div>
 
                 <button
-                  onClick={() => handlePurchase(p.plan as any, p.cost)}
-                  className={`btn btn-block !text-xs mt-6 !py-2.5 ${p.plan === "Pro" ? "btn-primary" : "btn-ghost"}`}
+                  onClick={() => void handleRequest(p.plan as "Starter" | "Pro" | "Agency", p.cost)}
+                  disabled={submitting}
+                  className={`btn btn-block !text-xs mt-6 !py-2.5 disabled:opacity-50 ${p.plan === "Pro" ? "btn-primary" : "btn-ghost"}`}
                 >
-                  Purchase {p.plan} Panel
+                  {submitting ? "Sending…" : `Request ${p.plan} Panel`}
                 </button>
               </div>
             ))}

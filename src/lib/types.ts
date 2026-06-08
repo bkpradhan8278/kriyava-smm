@@ -9,13 +9,13 @@ export interface MarketService {
   category: string;
   country: string;
   price: number; // retail INR per 1000
-  margin_pct: number;
+  margin_pct?: number; // internal only — not returned by the public API
   speed: string;
   refill: string;
   quality: number; // 1-5
   min: number | null;
   max: number | null;
-  provider: string;
+  provider?: string; // internal only — not returned by the public API
   description?: string;
   providerServiceId?: string;
   providerCostInr?: number;
