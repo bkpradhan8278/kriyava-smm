@@ -104,11 +104,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/add-funds"
-            className="flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1.5"
-            aria-label="Wallet balance"
+            className="group flex items-center gap-2 rounded-full border border-emerald-500/25 bg-gradient-to-r from-emerald-500/15 to-emerald-500/5 py-1 pl-1 pr-1 shadow-[0_2px_10px_rgba(16,185,129,0.12)] transition-all active:scale-95"
+            aria-label="Wallet balance — tap to add funds"
           >
-            <Wallet size={14} className="text-emerald-400" />
-            <span className="text-[13px] font-black text-emerald-400 leading-none">{fmtINR(account.balance)}</span>
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-emerald-500/20 text-emerald-400">
+              <Wallet size={14} strokeWidth={2.4} />
+            </span>
+            <span className="text-[14px] font-black text-emerald-400 leading-none tracking-tight">{fmtINR(account.balance)}</span>
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-emerald-500 text-[#06281d] font-black text-base leading-none transition-transform group-active:scale-90">+</span>
           </Link>
         </div>
       </div>
