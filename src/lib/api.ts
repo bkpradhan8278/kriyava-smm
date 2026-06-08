@@ -192,6 +192,14 @@ export const api = {
   adminReferrals: () => request<AdminReferralResponse>("/admin/referrals"),
   adminRefreshProviders: () =>
     request<{ ok: boolean; providerStatus: AdminSummaryResponse["providerStatus"] }>("/admin/providers/refresh", { method: "POST" }),
+  adminServiceCatalogMeta: () => request<AdminServiceCatalogMeta>("/admin/service-catalog"),
+  adminFullCatalog: () => request<{ services: AdminCatalogService[] }>("/admin/catalog"),
+  adminToggleProvider: (key: string, enabled: boolean) =>
+    request<{ ok: boolean }>("/admin/providers/toggle", { method: "POST", body: { key, enabled } }),
+  adminToggleService: (serviceId: string, enabled: boolean) =>
+    request<{ ok: boolean }>("/admin/services/toggle", { method: "POST", body: { serviceId, enabled } }),
+  adminSetMarkup: (target: string, value: number | null) =>
+    request<{ ok: boolean }>("/admin/services/markup", { method: "POST", body: { target, value } }),
 };
 
 export interface AdminOrderRow {
@@ -219,6 +227,38 @@ export interface AdminSummaryResponse {
   users: AdminUserRow[];
   deposits: AdminDepositRow[];
   todayDeposits: number;
+}
+
+export interface AdminProviderRow {
+  key: string;
+  name: string;
+  apiKeyMasked: string;
+  enabled: boolean;
+  balance: string;
+  serviceCount: number;
+}
+
+export interface AdminServiceCatalogMeta {
+  live: boolean;
+  totalServices: number;
+  providers: AdminProviderRow[];
+  markupOverrides: Record<string, number>;
+  platforms: string[];
+}
+
+export interface AdminCatalogService {
+  id: string;
+  name: string;
+  platform: string;
+  category: string;
+  provider: string;
+  providerKey: string;
+  providerCostInr: number;
+  margin_pct: number;
+  price: number;
+  min: number | null;
+  max: number | null;
+  enabled: boolean;
 }
 
 // Loads the Razorpay checkout script once.

@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   BarChart2, Users, ShoppingBag, Wallet, TrendingUp, RefreshCw,
   AlertTriangle, XCircle, Zap, Database, Shield, PlusCircle, CheckCircle2,
-  Lightbulb, Star, Gift,
+  Lightbulb, Star, Gift, Settings,
 } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
-import { api, type AdminSummaryResponse, type AdminOrderRow, type AdminUserRow, type AdminReferralResponse } from "@/lib/api";
+import { api, type AdminSummaryResponse, type AdminOrderRow, type AdminUserRow, type AdminReferralResponse, type AdminServiceCatalogMeta, type AdminCatalogService } from "@/lib/api";
 import { fmtINR } from "@/lib/account";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
@@ -90,7 +90,7 @@ function RevenueChart({ orders }: { orders: AdminOrderRow[] }) {
   );
 }
 
-type Tab = "overview" | "orders" | "users" | "providers" | "deposits" | "referrals" | "roadmap";
+type Tab = "overview" | "orders" | "users" | "providers" | "deposits" | "referrals" | "roadmap" | "services";
 
 const ROADMAP = [
   { status: "live", label: "Multi-provider routing (EasySMM + LuvSMM + FineSMM)", desc: "Auto cheapest first, balance-aware failover" },
@@ -124,6 +124,17 @@ export default function AdminPage() {
   const [providerRefreshing, setProviderRefreshing] = useState(false);
   const [providerMsg, setProviderMsg] = useState("");
 
+  const [svcMeta, setSvcMeta] = useState<AdminServiceCatalogMeta | null>(null);
+  const [catalog, setCatalog] = useState<AdminCatalogService[]>([]);
+  const [svcLoading, setSvcLoading] = useState(false);
+  const [svcMsg, setSvcMsg] = useState("");
+  const [svcSearch, setSvcSearch] = useState("");
+  const [svcPlatform, setSvcPlatform] = useState("All");
+  const [svcProviderFilter, setSvcProviderFilter] = useState("All");
+  const [svcEnabledFilter, setSvcEnabledFilter] = useState<"All" | "Enabled" | "Disabled">("All");
+  const [svcPage, setSvcPage] = useState(0);
+  const [markupEdit, setMarkupEdit] = useState<Record<string, string>>({});
+
   // Manual fund add state
   const [fundEmail, setFundEmail] = useState("");
   const [fundAmount, setFundAmountStr] = useState("100");
@@ -137,6 +148,11 @@ export default function AdminPage() {
     void fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account.email]);
+
+  useEffect(() => {
+    if (tab === "services") void loadServiceTab();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
 
   const fetchData = async () => {
     setLoading(true); setError("");
@@ -158,6 +174,58 @@ export default function AdminPage() {
       setProviderMsg("✅ Balances refreshed from all providers");
     } catch (e) { setProviderMsg("❌ " + (e instanceof Error ? e.message : "Refresh failed")); }
     finally { setProviderRefreshing(false); }
+  };
+
+  const loadServiceTab = async () => {
+    if (svcMeta) return; // already loaded
+    setSvcLoading(true); setSvcMsg("");
+    try {
+      const [meta, full] = await Promise.all([api.adminServiceCatalogMeta(), api.adminFullCatalog()]);
+      setSvcMeta(meta);
+      setCatalog(full.services);
+      // Seed markup edit from overrides
+      const init: Record<string, string> = {};
+      for (const [k, v] of Object.entries(meta.markupOverrides)) init[k] = String(v);
+      setMarkupEdit(init);
+    } catch (e) { setSvcMsg("❌ " + (e instanceof Error ? e.message : "Load failed")); }
+    finally { setSvcLoading(false); }
+  };
+
+  const handleToggleProvider = async (key: string, currentEnabled: boolean) => {
+    setSvcMsg("");
+    try {
+      await api.adminToggleProvider(key, !currentEnabled);
+      setSvcMeta(prev => prev ? { ...prev, providers: prev.providers.map(p => p.key === key ? { ...p, enabled: !currentEnabled } : p) } : prev);
+      setCatalog(prev => prev.map(s => s.providerKey === key ? { ...s, enabled: !currentEnabled } : s));
+      setSvcMsg(`✅ ${key.toUpperCase()} ${!currentEnabled ? "enabled" : "disabled"}`);
+    } catch (e) { setSvcMsg("❌ " + (e instanceof Error ? e.message : "Failed")); }
+  };
+
+  const handleToggleService = async (serviceId: string, currentEnabled: boolean) => {
+    try {
+      await api.adminToggleService(serviceId, !currentEnabled);
+      setCatalog(prev => prev.map(s => s.id === serviceId ? { ...s, enabled: !currentEnabled } : s));
+    } catch { /* silent */ }
+  };
+
+  const handleMarkupSave = async (target: string) => {
+    const valStr = markupEdit[target];
+    const val = valStr === "" || valStr === undefined ? null : Number(valStr);
+    if (val !== null && (isNaN(val) || val < 1 || val > 200)) { setSvcMsg("❌ Markup must be 1–200%"); return; }
+    setSvcMsg("");
+    try {
+      await api.adminSetMarkup(target, val);
+      setSvcMeta(prev => {
+        if (!prev) return prev;
+        const overrides = { ...prev.markupOverrides };
+        if (val === null) delete overrides[target];
+        else overrides[target] = val;
+        return { ...prev, markupOverrides: overrides };
+      });
+      setSvcMsg(`✅ Markup for "${target}" set to ${val === null ? "auto" : val + "%"}`);
+      // Reload catalog since prices changed
+      setTimeout(() => { setSvcMeta(null); void api.adminFullCatalog().then(r => setCatalog(r.services)); }, 2000);
+    } catch (e) { setSvcMsg("❌ " + (e instanceof Error ? e.message : "Failed")); }
   };
 
   const handleAddFunds = async (e: React.FormEvent) => {
@@ -196,6 +264,7 @@ export default function AdminPage() {
     { key: "orders", label: "Orders", icon: ShoppingBag },
     { key: "users", label: "Users", icon: Users },
     { key: "providers", label: "Providers", icon: Database },
+    { key: "services" as Tab, label: "Services", icon: Settings },
     { key: "deposits", label: "Deposits", icon: Wallet },
     { key: "referrals", label: "Referrals", icon: Gift },
     { key: "roadmap", label: "Roadmap", icon: Lightbulb },
@@ -534,6 +603,205 @@ export default function AdminPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ── SERVICES ── */}
+          {tab === "services" && (
+            <div className="space-y-6">
+              {svcMsg && <div className="text-[11px] font-bold rounded-lg px-3 py-2 bg-white/5 text-slate-300">{svcMsg}</div>}
+              {svcLoading && <div className="flex items-center gap-2 text-slate-500 text-sm py-8 justify-center"><RefreshCw size={14} className="animate-spin" />Loading catalog…</div>}
+
+              {/* Provider Toggles */}
+              {svcMeta && (
+                <>
+                  <div>
+                    <h3 className="text-sm font-black text-white mb-3">Provider Management</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {svcMeta.providers.map(p => (
+                        <div key={p.key} className={`rounded-2xl border p-4 space-y-3 ${p.enabled ? "border-white/5 bg-[#0D1321]/60" : "border-rose-500/20 bg-rose-500/5"}`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-black text-white text-sm">{p.name}</div>
+                              <div className="text-[10px] text-slate-500 font-mono mt-0.5">{p.apiKeyMasked}</div>
+                            </div>
+                            <button
+                              onClick={() => void handleToggleProvider(p.key, p.enabled)}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] font-black border transition-all ${
+                                p.enabled
+                                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
+                                  : "bg-rose-500/10 border-rose-500/20 text-rose-400 hover:bg-rose-500/20"
+                              }`}
+                            >
+                              {p.enabled ? "✓ ON" : "✗ OFF"}
+                            </button>
+                          </div>
+                          <div className="text-[11px] text-slate-400">
+                            <span className="text-white font-bold">{p.balance}</span> balance · <span className="text-white font-bold">{p.serviceCount.toLocaleString()}</span> services
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Markup Overrides */}
+                  <div>
+                    <h3 className="text-sm font-black text-white mb-1">Markup Control</h3>
+                    <p className="text-[11px] text-slate-500 mb-3">Set % markup per platform. Leave blank to use auto-calculated markup. Changes rebuild the full catalog (~30s).</p>
+                    <div className="rounded-2xl border border-white/5 bg-[#0D1321]/60 p-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {/* Global override */}
+                        <div className="col-span-2 sm:col-span-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
+                          <div className="text-[10px] font-extrabold text-amber-400 uppercase tracking-wider mb-2">Global Override (overrides all platforms)</div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={1} max={200}
+                              placeholder="e.g. 25 → auto"
+                              value={markupEdit["global"] ?? ""}
+                              onChange={e => setMarkupEdit(prev => ({ ...prev, global: e.target.value }))}
+                              className="w-28 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-amber-500"
+                            />
+                            <span className="text-slate-500 text-xs">%</span>
+                            <button onClick={() => void handleMarkupSave("global")} className="px-3 py-2 rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-400 text-[11px] font-bold hover:bg-amber-500/20">Save</button>
+                            {svcMeta.markupOverrides["global"] && <span className="text-[10px] text-amber-400 font-bold">Currently: {svcMeta.markupOverrides["global"]}%</span>}
+                          </div>
+                        </div>
+                        {/* Per-platform */}
+                        {svcMeta.platforms.map(platform => (
+                          <div key={platform} className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                            <div className="text-[10px] font-bold text-slate-400 mb-2">{platform}</div>
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                min={1} max={200}
+                                placeholder="Auto"
+                                value={markupEdit[platform] ?? ""}
+                                onChange={e => setMarkupEdit(prev => ({ ...prev, [platform]: e.target.value }))}
+                                className="w-16 rounded border border-white/10 bg-white/[0.03] px-2 py-1.5 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                              />
+                              <span className="text-slate-500 text-[10px]">%</span>
+                              <button onClick={() => void handleMarkupSave(platform)} className="px-2 py-1.5 rounded border border-blue-500/20 bg-blue-500/10 text-blue-400 text-[10px] font-bold">Set</button>
+                            </div>
+                            {svcMeta.markupOverrides[platform] && <div className="text-[10px] text-blue-400 mt-1">→ {svcMeta.markupOverrides[platform]}%</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Service Catalog */}
+                  <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                      <div>
+                        <h3 className="text-sm font-black text-white">Service Catalog</h3>
+                        <p className="text-[11px] text-slate-500">{catalog.length.toLocaleString()} total · {catalog.filter(s => !s.enabled).length} disabled</p>
+                      </div>
+                    </div>
+                    {/* Filters */}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <input
+                        type="text"
+                        placeholder="Search service name…"
+                        value={svcSearch}
+                        onChange={e => { setSvcSearch(e.target.value); setSvcPage(0); }}
+                        className="flex-1 min-w-[180px] rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2 text-xs text-white placeholder-slate-600 outline-none focus:border-blue-500"
+                      />
+                      <select value={svcPlatform} onChange={e => { setSvcPlatform(e.target.value); setSvcPage(0); }}
+                        className="rounded-lg border border-white/5 bg-[#0D1321] px-3 py-2 text-xs text-slate-300 outline-none">
+                        <option>All</option>
+                        {svcMeta.platforms.map(p => <option key={p}>{p}</option>)}
+                      </select>
+                      <select value={svcProviderFilter} onChange={e => { setSvcProviderFilter(e.target.value); setSvcPage(0); }}
+                        className="rounded-lg border border-white/5 bg-[#0D1321] px-3 py-2 text-xs text-slate-300 outline-none">
+                        <option>All</option>
+                        {svcMeta.providers.map(p => <option key={p.key}>{p.name}</option>)}
+                      </select>
+                      <select value={svcEnabledFilter} onChange={e => { setSvcEnabledFilter(e.target.value as "All" | "Enabled" | "Disabled"); setSvcPage(0); }}
+                        className="rounded-lg border border-white/5 bg-[#0D1321] px-3 py-2 text-xs text-slate-300 outline-none">
+                        <option>All</option>
+                        <option>Enabled</option>
+                        <option>Disabled</option>
+                      </select>
+                    </div>
+                    {/* Table */}
+                    {(() => {
+                      const filtered = catalog.filter(s => {
+                        if (svcPlatform !== "All" && s.platform !== svcPlatform) return false;
+                        if (svcProviderFilter !== "All" && s.provider !== svcProviderFilter) return false;
+                        if (svcEnabledFilter === "Enabled" && !s.enabled) return false;
+                        if (svcEnabledFilter === "Disabled" && s.enabled) return false;
+                        if (svcSearch.trim()) return s.name.toLowerCase().includes(svcSearch.toLowerCase());
+                        return true;
+                      });
+                      const PAGE = 50;
+                      const totalPages = Math.ceil(filtered.length / PAGE);
+                      const page = Math.min(svcPage, Math.max(0, totalPages - 1));
+                      const visible = filtered.slice(page * PAGE, (page + 1) * PAGE);
+                      return (
+                        <>
+                          <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 overflow-hidden">
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left text-xs text-slate-300">
+                                <thead>
+                                  <tr className="border-b border-white/5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+                                    <th className="py-3 px-3">Service</th>
+                                    <th className="py-3 px-3">Platform</th>
+                                    <th className="py-3 px-3">Provider</th>
+                                    <th className="py-3 px-3 text-right">Cost/k</th>
+                                    <th className="py-3 px-3 text-right">Markup</th>
+                                    <th className="py-3 px-3 text-right">Price/k</th>
+                                    <th className="py-3 px-3 text-center">Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {visible.map(s => (
+                                    <tr key={s.id} className={`border-b border-white/[0.03] hover:bg-white/[0.01] ${!s.enabled ? "opacity-40" : ""}`}>
+                                      <td className="py-2.5 px-3 max-w-[220px]">
+                                        <div className="font-medium text-slate-200 truncate text-[11px]">{s.name}</div>
+                                        <div className="text-[9px] text-slate-600 mt-0.5">{s.category}</div>
+                                      </td>
+                                      <td className="py-2.5 px-3 text-[11px]">{s.platform}</td>
+                                      <td className="py-2.5 px-3 text-[11px] text-slate-400">{s.provider}</td>
+                                      <td className="py-2.5 px-3 text-right text-[11px] text-slate-400">₹{s.providerCostInr.toFixed(3)}</td>
+                                      <td className="py-2.5 px-3 text-right text-[11px] text-amber-400 font-bold">{s.margin_pct}%</td>
+                                      <td className="py-2.5 px-3 text-right text-[11px] text-emerald-400 font-bold">₹{s.price.toFixed(3)}</td>
+                                      <td className="py-2.5 px-3 text-center">
+                                        <button
+                                          onClick={() => void handleToggleService(s.id, s.enabled)}
+                                          className={`px-2 py-1 rounded text-[10px] font-black border transition-all ${
+                                            s.enabled
+                                              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20"
+                                              : "bg-slate-500/10 border-slate-500/20 text-slate-500 hover:bg-slate-500/20"
+                                          }`}
+                                        >
+                                          {s.enabled ? "ON" : "OFF"}
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                  {visible.length === 0 && (
+                                    <tr><td colSpan={7} className="py-8 text-center text-slate-600 text-xs">No services match filters</td></tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                          {totalPages > 1 && (
+                            <div className="flex items-center justify-between mt-3">
+                              <span className="text-[11px] text-slate-500">{filtered.length.toLocaleString()} services · page {page + 1}/{totalPages}</span>
+                              <div className="flex gap-1.5">
+                                <button disabled={page === 0} onClick={() => setSvcPage(p => p - 1)} className="px-3 py-1.5 rounded-lg border border-white/5 text-xs text-slate-400 disabled:opacity-30 hover:bg-white/5">← Prev</button>
+                                <button disabled={page >= totalPages - 1} onClick={() => setSvcPage(p => p + 1)} className="px-3 py-1.5 rounded-lg border border-white/5 text-xs text-slate-400 disabled:opacity-30 hover:bg-white/5">Next →</button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
