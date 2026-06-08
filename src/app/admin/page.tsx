@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   BarChart2, Users, ShoppingBag, Wallet, TrendingUp, RefreshCw,
   AlertTriangle, XCircle, Zap, Database, Shield, PlusCircle, CheckCircle2,
-  Lightbulb, Star, Gift, Settings,
+  Lightbulb, Star, Gift, Settings, Inbox, MessageSquare, Bot, Mail,
 } from "lucide-react";
 import { useAccount } from "@/lib/useAccount";
-import { api, type AdminSummaryResponse, type AdminOrderRow, type AdminUserRow, type AdminReferralResponse, type AdminServiceCatalogMeta, type AdminCatalogService } from "@/lib/api";
+import { api, type AdminSummaryResponse, type AdminOrderRow, type AdminUserRow, type AdminReferralResponse, type AdminServiceCatalogMeta, type AdminCatalogService, type AdminLeadsResponse, type AdminLeadRow } from "@/lib/api";
 import { fmtINR } from "@/lib/account";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
@@ -90,7 +90,7 @@ function RevenueChart({ orders }: { orders: AdminOrderRow[] }) {
   );
 }
 
-type Tab = "overview" | "orders" | "users" | "providers" | "deposits" | "referrals" | "roadmap" | "services";
+type Tab = "overview" | "orders" | "users" | "providers" | "deposits" | "referrals" | "roadmap" | "services" | "leads";
 
 const ROADMAP = [
   { status: "live", label: "Multi-provider routing (EasySMM + LuvSMM + FineSMM)", desc: "Auto cheapest first, balance-aware failover" },
@@ -135,6 +135,12 @@ export default function AdminPage() {
   const [svcPage, setSvcPage] = useState(0);
   const [markupEdit, setMarkupEdit] = useState<Record<string, string>>({});
 
+  // Leads state
+  const [leadsData, setLeadsData] = useState<AdminLeadsResponse | null>(null);
+  const [leadsLoading, setLeadsLoading] = useState(false);
+  const [leadFilter, setLeadFilter] = useState<"All" | "contact" | "ai_chat" | "ticket">("All");
+  const [expandedLead, setExpandedLead] = useState<string | null>(null);
+
   // Manual fund add state
   const [fundEmail, setFundEmail] = useState("");
   const [fundAmount, setFundAmountStr] = useState("100");
@@ -151,8 +157,29 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (tab === "services") void loadServiceTab();
+    if (tab === "leads") void loadLeads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
+
+  const loadLeads = async () => {
+    setLeadsLoading(true);
+    try {
+      const res = await api.adminLeads();
+      setLeadsData(res);
+    } catch (e) { setError(e instanceof Error ? e.message : "Leads load failed"); }
+    finally { setLeadsLoading(false); }
+  };
+
+  const handleLeadStatus = async (lead: AdminLeadRow, status: string) => {
+    try {
+      await api.adminLeadStatus(lead.id, lead.kind, status);
+      setLeadsData((prev) => prev ? {
+        ...prev,
+        leads: prev.leads.map((l) => l.id === lead.id ? { ...l, status } : l),
+        counts: { ...prev.counts, unresolved: prev.leads.filter((l) => l.id === lead.id ? (status === "New" || status === "Open") : (l.status === "New" || l.status === "Open")).length },
+      } : prev);
+    } catch { /* silent */ }
+  };
 
   const fetchData = async () => {
     setLoading(true); setError("");
@@ -261,6 +288,7 @@ export default function AdminPage() {
 
   const TABS: { key: Tab; label: string; icon: React.ElementType }[] = [
     { key: "overview", label: "Overview", icon: BarChart2 },
+    { key: "leads" as Tab, label: "Leads", icon: Inbox },
     { key: "orders", label: "Orders", icon: ShoppingBag },
     { key: "users", label: "Users", icon: Users },
     { key: "providers", label: "Providers", icon: Database },
@@ -366,6 +394,103 @@ export default function AdminPage() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* ── LEADS ── */}
+          {tab === "leads" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-black text-white">Leads Inbox</h3>
+                  <p className="text-[11px] text-slate-500">Contact forms, AI chats, and support tickets — all in one place.</p>
+                </div>
+                <button onClick={() => void loadLeads()} disabled={leadsLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-400 text-[11px] font-bold hover:bg-blue-500/20 disabled:opacity-50">
+                  <RefreshCw size={11} className={leadsLoading ? "animate-spin" : ""} /> Refresh
+                </button>
+              </div>
+
+              {/* Count chips */}
+              {leadsData && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <button onClick={() => setLeadFilter("All")} className={`rounded-xl border p-3 text-left transition-all ${leadFilter === "All" ? "border-blue-500/40 bg-blue-500/10" : "border-white/5 bg-[#0D1321]/60 hover:border-white/10"}`}>
+                    <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider"><Inbox size={12} /> All</div>
+                    <div className="text-xl font-black text-white mt-1">{leadsData.counts.total}</div>
+                  </button>
+                  <button onClick={() => setLeadFilter("contact")} className={`rounded-xl border p-3 text-left transition-all ${leadFilter === "contact" ? "border-emerald-500/40 bg-emerald-500/10" : "border-white/5 bg-[#0D1321]/60 hover:border-white/10"}`}>
+                    <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider"><Mail size={12} /> Contact</div>
+                    <div className="text-xl font-black text-emerald-400 mt-1">{leadsData.counts.contact}</div>
+                  </button>
+                  <button onClick={() => setLeadFilter("ai_chat")} className={`rounded-xl border p-3 text-left transition-all ${leadFilter === "ai_chat" ? "border-purple-500/40 bg-purple-500/10" : "border-white/5 bg-[#0D1321]/60 hover:border-white/10"}`}>
+                    <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider"><Bot size={12} /> AI Chat</div>
+                    <div className="text-xl font-black text-purple-400 mt-1">{leadsData.counts.ai_chat}</div>
+                  </button>
+                  <button onClick={() => setLeadFilter("ticket")} className={`rounded-xl border p-3 text-left transition-all ${leadFilter === "ticket" ? "border-amber-500/40 bg-amber-500/10" : "border-white/5 bg-[#0D1321]/60 hover:border-white/10"}`}>
+                    <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider"><MessageSquare size={12} /> Tickets</div>
+                    <div className="text-xl font-black text-amber-400 mt-1">{leadsData.counts.ticket}</div>
+                  </button>
+                </div>
+              )}
+
+              {leadsLoading && <div className="flex items-center gap-2 justify-center py-10 text-slate-500 text-sm"><RefreshCw size={14} className="animate-spin" /> Loading leads…</div>}
+
+              {/* Lead list */}
+              {leadsData && (
+                <div className="space-y-2.5">
+                  {leadsData.leads.filter((l) => leadFilter === "All" || l.source === leadFilter).map((l) => {
+                    const open = expandedLead === l.id;
+                    const srcStyle = l.source === "contact" ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                      : l.source === "ai_chat" ? "text-purple-400 bg-purple-500/10 border-purple-500/20"
+                      : "text-amber-400 bg-amber-500/10 border-amber-500/20";
+                    const SrcIcon = l.source === "contact" ? Mail : l.source === "ai_chat" ? Bot : MessageSquare;
+                    const resolved = l.status !== "New" && l.status !== "Open";
+                    return (
+                      <div key={l.id} className={`rounded-xl border bg-[#0D1321]/50 overflow-hidden ${resolved ? "border-white/5 opacity-60" : "border-white/10"}`}>
+                        <button onClick={() => setExpandedLead(open ? null : l.id)} className="w-full flex items-start gap-3 p-3.5 text-left hover:bg-white/[0.02]">
+                          <span className={`shrink-0 mt-0.5 grid h-8 w-8 place-items-center rounded-lg border ${srcStyle}`}><SrcIcon size={14} /></span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[13px] font-bold text-white truncate">{l.name || l.email || "Anonymous"}</span>
+                              <span className={`text-[8.5px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border ${srcStyle}`}>{l.source === "ai_chat" ? "AI Chat" : l.source}</span>
+                              {resolved && <span className="text-[8.5px] font-black uppercase text-slate-500">✓ {l.status}</span>}
+                            </div>
+                            <div className="text-[11px] text-slate-400 mt-0.5 truncate">{l.subject ? `${l.subject} · ` : ""}{l.message}</div>
+                            <div className="text-[9.5px] text-slate-600 mt-0.5">{l.time}{l.email ? ` · ${l.email}` : ""}</div>
+                          </div>
+                        </button>
+                        {open && (
+                          <div className="border-t border-white/5 bg-white/[0.01] p-4 space-y-3">
+                            <div>
+                              <div className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">Message</div>
+                              <p className="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">{l.message}</p>
+                            </div>
+                            {l.reply && (
+                              <div>
+                                <div className="text-[9px] font-extrabold text-purple-400 uppercase tracking-wider mb-1">AI Reply</div>
+                                <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed bg-purple-500/5 border border-purple-500/10 rounded-lg p-2.5">{l.reply}</p>
+                              </div>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                              {l.email && (
+                                <a href={`mailto:${l.email}`} className="px-3 py-1.5 rounded-lg border border-blue-500/20 bg-blue-500/10 text-blue-400 text-[11px] font-bold">✉ Reply by email</a>
+                              )}
+                              {!resolved ? (
+                                <button onClick={() => void handleLeadStatus(l, l.kind === "ticket" ? "Closed" : "Resolved")} className="px-3 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-[11px] font-bold">✓ Mark resolved</button>
+                              ) : (
+                                <button onClick={() => void handleLeadStatus(l, l.kind === "ticket" ? "Open" : "New")} className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-slate-400 text-[11px] font-bold">↺ Reopen</button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {leadsData.leads.filter((l) => leadFilter === "All" || l.source === leadFilter).length === 0 && (
+                    <div className="py-12 text-center text-slate-600 text-xs">No leads in this category yet.</div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

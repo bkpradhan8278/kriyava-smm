@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Mail, MessageSquare, Clock, Globe, Send, CheckCircle2 } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function ContactUsPage() {
   const [name, setName] = useState("");
@@ -10,16 +11,27 @@ export default function ContactUsPage() {
   const [subject, setSubject] = useState("general");
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSent(true);
-    setTimeout(() => {
-      setName("");
-      setEmail("");
-      setMessage("");
-      setSent(false);
-    }, 4000);
+    setSending(true);
+    setError("");
+    try {
+      await api.contactSupport(name, email, subject, message);
+      setSent(true);
+      setTimeout(() => {
+        setName("");
+        setEmail("");
+        setMessage("");
+        setSent(false);
+      }, 5000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not send — please try again.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -147,6 +159,9 @@ export default function ContactUsPage() {
                   />
                 </div>
 
+                {error && (
+                  <div className="px-4 py-3 rounded-xl bg-rose-50 text-rose-700 border border-rose-100 text-xs font-bold">{error}</div>
+                )}
                 {sent ? (
                   <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold animate-slideup">
                     <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
@@ -155,10 +170,11 @@ export default function ContactUsPage() {
                 ) : (
                   <button
                     type="submit"
-                    className="btn btn-primary btn-block !py-3.5 !text-xs flex items-center justify-center gap-2"
+                    disabled={sending}
+                    className="btn btn-primary btn-block !py-3.5 !text-xs flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <Send size={13} />
-                    Submit Ticket Inquiry
+                    {sending ? "Sending…" : "Submit Ticket Inquiry"}
                   </button>
                 )}
               </form>

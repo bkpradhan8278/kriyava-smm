@@ -190,6 +190,11 @@ export const api = {
       method: "POST", body: { email, amount, note },
     }),
   adminReferrals: () => request<AdminReferralResponse>("/admin/referrals"),
+  contactSupport: (name: string, email: string, subject: string, message: string) =>
+    request<{ ok: boolean; id: string }>("/leads/contact", { method: "POST", body: { name, email, subject, message }, auth: false }),
+  adminLeads: () => request<AdminLeadsResponse>("/admin/leads"),
+  adminLeadStatus: (id: string, kind: string, status: string) =>
+    request<{ ok: boolean }>("/admin/leads/status", { method: "POST", body: { id, kind, status } }),
   adminRefreshProviders: () =>
     request<{ ok: boolean; providerStatus: AdminSummaryResponse["providerStatus"] }>("/admin/providers/refresh", { method: "POST" }),
   adminServiceCatalogMeta: () => request<AdminServiceCatalogMeta>("/admin/service-catalog"),
@@ -227,6 +232,23 @@ export interface AdminSummaryResponse {
   users: AdminUserRow[];
   deposits: AdminDepositRow[];
   todayDeposits: number;
+}
+
+export interface AdminLeadRow {
+  id: string;
+  kind: "lead" | "ticket";
+  source: "contact" | "ai_chat" | "ticket";
+  name: string | null;
+  email: string | null;
+  subject: string | null;
+  message: string;
+  reply: string | null;
+  status: string;
+  time: string;
+}
+export interface AdminLeadsResponse {
+  counts: { total: number; contact: number; ai_chat: number; ticket: number; unresolved: number };
+  leads: AdminLeadRow[];
 }
 
 export interface AdminProviderRow {
