@@ -7,7 +7,7 @@ import { fmtINR } from "@/lib/account";
 import { api } from "@/lib/api";
 import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
-const STATUS_TABS = ["All", "Processing", "In progress", "Partial", "Completed", "Canceled"];
+const STATUS_TABS = ["All", "Processing", "In progress", "Partial", "Completed", "Canceled", "Failed"];
 
 function getTimeAgo(at: number) {
   const diff = Date.now() - at;
@@ -22,6 +22,7 @@ function StatusBadge({ status }: { status: string }) {
   const cls =
     l === "completed" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
     : l === "canceled" ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+    : l === "failed" ? "bg-red-500/10 text-red-400 border-red-500/20"
     : l === "partial" ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
     : "bg-amber-500/10 text-amber-400 border-amber-500/20";
   return <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border ${cls}`}>{status}</span>;
@@ -57,9 +58,9 @@ export default function OrdersPage() {
     return true;
   });
 
-  const totalSpent = (account.orders || []).reduce((s, o) => (o.status !== "Canceled" ? s + o.charge : s), 0);
+  const totalSpent = (account.orders || []).reduce((s, o) => (o.status !== "Canceled" && o.status !== "Failed" ? s + o.charge : s), 0);
   const completedCount = (account.orders || []).filter((o) => o.status === "Completed").length;
-  const activeCount = (account.orders || []).filter((o) => o.status !== "Completed" && o.status !== "Canceled").length;
+  const activeCount = (account.orders || []).filter((o) => o.status !== "Completed" && o.status !== "Canceled" && o.status !== "Failed").length;
 
   return (
     <DashboardShell>
