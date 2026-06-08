@@ -83,27 +83,33 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <AuthGuard>
     <div className="dashboard-shell h-screen bg-[#090D16] text-white flex flex-col md:flex-row overflow-hidden">
 
-      {/* MOBILE HEADER */}
-      <div className="md:hidden flex h-16 items-center justify-between px-4 border-b border-white/5 bg-[#0D1321]/90 backdrop-blur-md sticky top-0 z-40">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="h-8 w-8 overflow-hidden rounded-lg bg-blue-600/20 p-1 flex items-center justify-center">
-            <Image src="/assets/logo-128.png" alt="" width={24} height={24} />
-          </span>
-          <span className="font-display font-extrabold text-[17px] tracking-tight">Kriyava</span>
-        </Link>
-        <div className="flex items-center gap-2">
-          <div className="text-right mr-1">
-            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none">Wallet</div>
-            <div className="text-xs font-black text-emerald-400 mt-0.5">{fmtINR(account.balance)}</div>
-          </div>
-          {avatar("h-9 w-9")}
-          <button
-            onClick={() => setMobileOpen((o) => !o)}
-            className="grid h-9 w-9 place-items-center rounded-lg border border-white/10 bg-white/5"
-            aria-label="Open sidebar"
+      {/* MOBILE HEADER — hamburger (left) · logo (center-right) · wallet (right) */}
+      <div className="md:hidden flex h-16 items-center justify-between gap-2 px-3 border-b border-white/5 bg-[#0D1321]/90 backdrop-blur-md sticky top-0 z-40">
+        {/* LEFT: hamburger */}
+        <button
+          onClick={() => setMobileOpen((o) => !o)}
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5 text-slate-200 transition-colors hover:bg-white/10 active:scale-95"
+          aria-label="Open menu"
+        >
+          {mobileOpen ? <X size={19} /> : <Menu size={19} />}
+        </button>
+
+        {/* RIGHT: logo + wallet */}
+        <div className="flex items-center gap-2.5">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <span className="h-8 w-8 overflow-hidden rounded-lg bg-blue-600/20 p-1 flex items-center justify-center">
+              <Image src="/assets/logo-128.png" alt="" width={24} height={24} />
+            </span>
+            <span className="font-display font-extrabold text-[17px] tracking-tight">Kriyava</span>
+          </Link>
+          <Link
+            href="/add-funds"
+            className="flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1.5"
+            aria-label="Wallet balance"
           >
-            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
-          </button>
+            <Wallet size={14} className="text-emerald-400" />
+            <span className="text-[13px] font-black text-emerald-400 leading-none">{fmtINR(account.balance)}</span>
+          </Link>
         </div>
       </div>
 
@@ -178,15 +184,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <div className="shrink-0 border-t border-white/5 bg-white/[0.01] p-4">
           <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/5 bg-white/[0.02] px-3 py-3">
             <div className="flex min-w-0 items-center gap-2.5">
-              {avatar("h-9 w-9")}
+              {avatar("h-10 w-10")}
               <div className="min-w-0">
-                <div className="truncate text-xs font-bold text-white">{firstName}</div>
-                <div className="text-[10px] font-medium text-slate-400">welcome back</div>
+                <div className="truncate text-[13px] font-bold text-white">{firstName}</div>
+                <div className="text-[10px] font-bold text-blue-400 mt-0.5">Creator Tier</div>
               </div>
             </div>
             <button
               onClick={handleLogout}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/5 bg-white/[0.02] text-slate-300 transition-colors hover:bg-rose-500/10 hover:text-rose-400"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-rose-500/15 bg-rose-500/5 text-rose-400 transition-colors hover:bg-rose-500/15"
               title="Logout"
               aria-label="Logout"
             >
