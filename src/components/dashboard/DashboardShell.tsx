@@ -94,14 +94,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           {mobileOpen ? <X size={19} /> : <Menu size={19} />}
         </button>
 
-        {/* RIGHT: logo + wallet */}
+        {/* RIGHT: wallet */}
         <div className="flex items-center gap-2.5">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="h-8 w-8 overflow-hidden rounded-lg bg-blue-600/20 p-1 flex items-center justify-center">
-              <Image src="/assets/logo-128.png" alt="" width={24} height={24} />
-            </span>
-            <span className="font-display font-extrabold text-[17px] tracking-tight">Kriyava</span>
-          </Link>
           <Link
             href="/add-funds"
             className="group flex items-center gap-2 rounded-full border border-emerald-500/25 bg-gradient-to-r from-emerald-500/15 to-emerald-500/5 py-1 pl-1 pr-1 shadow-[0_2px_10px_rgba(16,185,129,0.12)] transition-all active:scale-95"
