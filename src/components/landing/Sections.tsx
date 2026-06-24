@@ -293,7 +293,7 @@ export function HowItWorks() {
 /* ── Typewriter hook ── */
 const CODE_SNIPPET = `// Auto-routes EasySMM → LuvSMM → FineSMM
 const res = await fetch(
-  "https://kriyava-api-82kg9.ondigitalocean.app/api",
+  "https://smm-api.kriyava.com/api",
   {
     method: "POST",
     headers: {
