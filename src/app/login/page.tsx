@@ -77,8 +77,28 @@ function LoginContent() {
       localStorage.setItem(LAST_GOOGLE_KEY, JSON.stringify({ name: g.name, email: g.email, photoURL: g.photoURL }));
       router.push("/dashboard");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Sign-in cancelled";
-      if (!/popup|cancel|closed/i.test(msg)) setError("Google sign-in failed. Please try again.");
+      // Firebase errors carry a machine code like "auth/operation-not-allowed".
+      const code =
+        (err as { code?: string })?.code ||
+        (err instanceof Error ? err.message : "") ||
+        "sign-in-cancelled";
+
+      // User dismissed the popup — not an error, stay silent.
+      if (/popup-closed|cancelled-popup|user-cancelled|popup-blocked|cancel|closed/i.test(code)) {
+        setLoading(false);
+        return;
+      }
+
+      const friendly: Record<string, string> = {
+        "auth/operation-not-allowed": "Google sign-in isn't enabled yet. Please use email, or contact support.",
+        "auth/unauthorized-domain": "This site isn't authorized for Google sign-in yet. Please use email for now.",
+        "auth/network-request-failed": "Network problem reaching Google. Check your connection and try again.",
+        "auth/internal-error": "Google sign-in had a temporary problem. Please try again in a moment.",
+      };
+      const known = Object.keys(friendly).find((k) => code.includes(k));
+      // Show the raw code in brackets so we can diagnose if it's an unexpected one.
+      setError(known ? friendly[known] : `Google sign-in failed (${code}). Please try again or use email.`);
+      console.error("[Google sign-in]", code, err);
       setLoading(false);
     }
   };
