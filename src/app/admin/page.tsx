@@ -93,7 +93,7 @@ function RevenueChart({ orders }: { orders: AdminOrderRow[] }) {
 type Tab = "overview" | "orders" | "users" | "providers" | "deposits" | "referrals" | "roadmap" | "services" | "leads";
 
 const ROADMAP = [
-  { status: "live", label: "Multi-provider routing (EasySMM + LuvSMM + FineSMM)", desc: "Auto cheapest first, balance-aware failover" },
+  { status: "live", label: "Multi-provider routing (EasySMM + LuvSMM)", desc: "Auto cheapest first, balance-aware failover" },
   { status: "live", label: "Razorpay payments with HMAC verification", desc: "Server-side signature check, instant wallet credit" },
   { status: "live", label: "15% markup auto-applied on all services", desc: "Refreshed every 30 minutes from live provider catalog" },
   { status: "live", label: "Admin CRM with manual fund credit", desc: "Full order/user/provider analytics" },

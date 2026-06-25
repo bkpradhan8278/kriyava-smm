@@ -291,7 +291,7 @@ export function HowItWorks() {
 }
 
 /* ── Typewriter hook ── */
-const CODE_SNIPPET = `// Auto-routes EasySMM → LuvSMM → FineSMM
+const CODE_SNIPPET = `// Auto-routes EasySMM → LuvSMM
 const res = await fetch(
   "https://smm-api.kriyava.com/api",
   {
