@@ -110,9 +110,19 @@ html[data-theme="light"] .dashboard-shell [class*="bg-white\\/["] {
 html[data-theme="light"] .dashboard-shell [class*="text-white"] {
   color: #0f172a !important;
 }
+/* slate-200/300 = secondary text (e.g. service names) — invisible on white unless darkened */
+html[data-theme="light"] .dashboard-shell [class*="text-slate-200"],
+html[data-theme="light"] .dashboard-shell [class*="text-slate-300"] {
+  color: #334155 !important;
+}
 html[data-theme="light"] .dashboard-shell [class*="text-slate-400"],
-html[data-theme="light"] .dashboard-shell [class*="text-slate-500"] {
+html[data-theme="light"] .dashboard-shell [class*="text-slate-500"],
+html[data-theme="light"] .dashboard-shell [class*="text-slate-600"] {
   color: #64748b !important;
+}
+/* placeholder text stays light-muted on white */
+html[data-theme="light"] .dashboard-shell ::placeholder {
+  color: #94a3b8 !important;
 }
 html[data-theme="light"] .dashboard-shell [class*="border-white/"],
 html[data-theme="light"] .dashboard-shell [class*="border-white\\/"] {

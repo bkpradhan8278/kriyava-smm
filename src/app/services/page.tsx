@@ -135,7 +135,7 @@ function ServicesContent() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-6 items-start">
         {/* SIDE FILTERS PANEL */}
         <aside className={`rounded-2xl border p-5 backdrop-blur-md text-left space-y-6 shrink-0 ${
           isLoggedIn ? "border-white/5 bg-[#0D1321]/50 text-white" : "border-slate-200/60 bg-white text-slate-800 shadow-sm"

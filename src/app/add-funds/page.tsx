@@ -102,7 +102,7 @@ export default function AddFundsPage() {
         <p className="text-sm text-slate-400 mt-1">Refill your Kriyava wallet instantly. Choose cards, netbanking, UPI, or wholesale wire transfers.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-6 items-start">
         {/* INPUT DEPOSIT CARD */}
         <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-6 backdrop-blur-md text-left space-y-6">
           <div className="flex items-center justify-between border-b border-white/5 pb-4">

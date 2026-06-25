@@ -159,7 +159,7 @@ export default function MassOrderPage() {
         <p className="text-sm text-slate-400 mt-1">Place multiple orders at once — one campaign per line. Perfect for marketing agencies and resellers.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-6 items-start">
         {/* TEXT INPUT CARD */}
         <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-6 backdrop-blur-md text-left space-y-5">
           <div className="flex items-center justify-between border-b border-white/5 pb-4">

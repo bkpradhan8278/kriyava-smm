@@ -128,9 +128,9 @@ export default function NewOrderPage() {
         <p className="text-sm text-slate-400 mt-1">Search or browse services, paste your link, and grow.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-6 items-start">
         {/* ── LEFT ────────────────────────────────────────────────────────── */}
-        <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-5 space-y-5">
+        <div className="min-w-0 rounded-2xl border border-white/5 bg-[#0D1321]/50 p-5 space-y-5">
 
           {/* ── SEARCH (at the top — by name or service code) ── */}
           <div>
@@ -300,7 +300,7 @@ export default function NewOrderPage() {
         </div>
 
         {/* ── RIGHT: SUMMARY ──────────────────────────────────────────────── */}
-        <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-5 sticky top-6 space-y-4">
+        <div className="min-w-0 rounded-2xl border border-white/5 bg-[#0D1321]/50 p-5 lg:sticky lg:top-6 space-y-4">
           <h3 className="text-xs font-extrabold text-white uppercase tracking-wider border-b border-white/5 pb-4">Order Summary</h3>
 
           {activeService ? (
@@ -311,7 +311,7 @@ export default function NewOrderPage() {
                   <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-black font-mono ${badgeColor(activeService.id)}`}>
                     {shortId(activeService.id)}
                   </span>
-                  <p className="text-white font-bold text-[11px] leading-snug">{activeService.name}</p>
+                  <p className="min-w-0 break-words text-white font-bold text-[11px] leading-snug">{activeService.name}</p>
                 </div>
               </div>
               <div className="space-y-2 text-xs">

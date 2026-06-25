@@ -70,7 +70,7 @@ export default function TicketsPage() {
         <p className="text-sm text-slate-400 mt-1">Open billing, API, or order status tickets. Replies are handled by the support team.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1.7fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.7fr)] gap-6 items-start">
         <div className="space-y-6 text-left">
           <div className="rounded-2xl border border-white/5 bg-[#0D1321]/50 p-6 backdrop-blur-md space-y-4">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider border-b border-white/5 pb-3">
