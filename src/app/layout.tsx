@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Inter_Tight } from "next/font/google";
+import { TagManager } from "@/components/analytics/tag-manager";
 import "./globals.css";
 
 const inter = Inter({
@@ -57,7 +58,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className={`${inter.variable} ${interTight.variable}`}>{children}</body>
+      <body className={`${inter.variable} ${interTight.variable}`}>
+        {children}
+        <TagManager />
+      </body>
     </html>
   );
 }
