@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { ALL_MARKETING_PATHS } from "@/lib/marketing-data";
 
 /**
  * Only public, indexable pages. Everything behind the wallet/order flow is
@@ -14,6 +15,7 @@ const BASE = "https://smm.kriyava.com";
 const LAST_CONTENT_UPDATE = "2026-08-28";
 
 const PUBLIC_ROUTES = [
+  ...ALL_MARKETING_PATHS,
   "",
   "/services",
   "/blog",
