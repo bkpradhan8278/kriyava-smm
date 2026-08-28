@@ -14,10 +14,14 @@ const interTight = Inter_Tight({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://kriyava.com"),
+  // The panel lives on smm.kriyava.com. Pointing metadataBase at kriyava.com
+  // made every generated canonical and OG URL resolve to the parent site,
+  // handing Kriyava SMM's ranking signals to a different host.
+  metadataBase: new URL("https://smm.kriyava.com"),
+  alternates: { canonical: "/" },
   title: "Kriyava SMM — Grow Your Social Media Presence Faster Than Ever",
   description:
-    "High-quality followers, likes, views and engagement delivered safely through Kriyava SMM's advanced automation platform with multi-provider failover. Trusted by 50,000+ marketers.",
+    "Followers, likes, views and engagement across 550+ services, delivered through Kriyava SMM's automation platform with multi-provider failover, wallet top-ups and order refills.",
   icons: {
     icon: [
       { url: "/assets/favicon.ico" },
@@ -26,6 +30,16 @@ export const metadata: Metadata = {
     apple: "/assets/apple-touch-icon.png",
   },
   openGraph: {
+    title: "Kriyava SMM — Premium Social Media Growth",
+    description: "High-quality engagement, wholesale pricing, multi-provider reliability.",
+    url: "https://smm.kriyava.com",
+    siteName: "Kriyava SMM",
+    type: "website",
+    locale: "en_IN",
+    images: ["/assets/og-hero.jpg"],
+  },
+  twitter: {
+    card: "summary_large_image",
     title: "Kriyava SMM — Premium Social Media Growth",
     description: "High-quality engagement, wholesale pricing, multi-provider reliability.",
     images: ["/assets/og-hero.jpg"],
